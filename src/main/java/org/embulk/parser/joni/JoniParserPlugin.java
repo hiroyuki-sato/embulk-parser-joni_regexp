@@ -12,30 +12,31 @@ import org.embulk.spi.FileInput;
 import org.embulk.spi.PageOutput;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.PageBuilder;
+
+import org.embulk.spi.time.TimestampParser;
+import org.embulk.spi.Exec;
+import org.embulk.spi.util.Timestamps;
+
+import org.embulk.spi.util.LineDecoder;
+import org.slf4j.Logger;
+
 
 public class JoniParserPlugin
         implements ParserPlugin
 {
+    private static final Logger logger = Exec.getLogger(JoniParserPlugin.class);
+
     public interface PluginTask
-            extends Task
+            extends Task,LineDecoder.DecoderTask, TimestampParser.Task
     {
-        // configuration option 1 (required integer)
-        @Config("option1")
-        public int getOption1();
-
-        // configuration option 2 (optional string, null is not allowed)
-        @Config("option2")
-        @ConfigDefault("\"myvalue\"")
-        public String getOption2();
-
-        // configuration option 3 (optional string, null is allowed)
-        @Config("option3")
-        @ConfigDefault("null")
-        public Optional<String> getOption3();
-
-        // if you get schema from config or data source
         @Config("columns")
-        public SchemaConfig getColumns();
+        SchemaConfig getColumns();
+
+        @Config("stop_on_invalid_record")
+        @ConfigDefault("false")
+        boolean getStopOnInvalidRecord();
+
     }
 
     @Override
@@ -53,8 +54,20 @@ public class JoniParserPlugin
             FileInput input, PageOutput output)
     {
         PluginTask task = taskSource.loadTask(PluginTask.class);
+        LineDecoder lineDecoder = new LineDecoder(input, task);
+        PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output);
+        TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getColumns());
 
-        // Write your code here :)
-        throw new UnsupportedOperationException("JoniParserPlugin.run method is not implemented yet");
+        while (input.nextFile()) {
+            while (true) {
+                String line = lineDecoder.poll();
+
+                if (line == null) {
+                    break;
+                }
+
+            }
+        }
+
     }
 }

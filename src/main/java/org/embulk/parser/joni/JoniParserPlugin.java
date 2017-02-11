@@ -19,12 +19,12 @@ import org.embulk.spi.Exec;
 import org.embulk.spi.util.Timestamps;
 
 import org.embulk.spi.util.LineDecoder;
+import org.joni.*;
 import org.slf4j.Logger;
 
 import org.jcodings.specific.UTF8Encoding;
-import org.joni.Matcher;
-import org.joni.Option;
-import org.joni.Regex;
+
+import java.util.Iterator;
 
 
 public class JoniParserPlugin
@@ -41,6 +41,9 @@ public class JoniParserPlugin
         @Config("stop_on_invalid_record")
         @ConfigDefault("false")
         boolean getStopOnInvalidRecord();
+
+        @Config("format")
+        String getFormat();
 
     }
 
@@ -63,6 +66,11 @@ public class JoniParserPlugin
         PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output);
         TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getColumns());
 
+        String format = task.getFormat();
+        byte[] pattern = format.getBytes();
+
+        Regex regex = new Regex(pattern,0,pattern.length,Option.NONE,UTF8Encoding.INSTANCE);
+
         while (input.nextFile()) {
             while (true) {
                 String line = lineDecoder.poll();
@@ -70,7 +78,14 @@ public class JoniParserPlugin
                 if (line == null) {
                     break;
                 }
-
+                Matcher matcher = regex.matcher(pattern);
+                int result = matcher.search(0,line.getBytes().length,Option.DEFAULT);
+                if( result != -1 ){
+                     Region region = matcher.getEagerRegion();
+                     for(Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ){
+                         NameEntry e = entry.next();
+                     }
+                }
             }
         }
 

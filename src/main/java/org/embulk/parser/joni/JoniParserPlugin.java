@@ -21,6 +21,11 @@ import org.embulk.spi.util.Timestamps;
 import org.embulk.spi.util.LineDecoder;
 import org.slf4j.Logger;
 
+import org.jcodings.specific.UTF8Encoding;
+import org.joni.Matcher;
+import org.joni.Option;
+import org.joni.Regex;
+
 
 public class JoniParserPlugin
         implements ParserPlugin

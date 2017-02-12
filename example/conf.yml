@@ -4,7 +4,8 @@ in:
   parser:
     type: joni
     columns:
-      - { name: test, type: string }
+      - { name: name, type: string }
+      - { name: fuga, type: string }
 #    format: "(?<hoge>aaa*),(?<fuga>bbb*),(?<test>ccc)"
     format: "(?<name>a*) (?<fuga>bbbb*)"
 out:

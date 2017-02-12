@@ -7,19 +7,15 @@ import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
-import org.embulk.spi.ParserPlugin;
-import org.embulk.spi.FileInput;
-import org.embulk.spi.PageOutput;
-import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
-import org.embulk.spi.PageBuilder;
+import org.embulk.spi.*;
 
+import org.embulk.spi.json.JsonParser;
 import org.embulk.spi.time.TimestampParser;
-import org.embulk.spi.Exec;
 import org.embulk.spi.util.Timestamps;
 
 import org.embulk.spi.util.LineDecoder;
 import org.joni.*;
+import org.msgpack.value.ValueFactory;
 import org.slf4j.Logger;
 
 import org.jcodings.specific.UTF8Encoding;
@@ -27,6 +23,7 @@ import org.jcodings.specific.UTF8Encoding;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Locale;
+import org.msgpack.value.Value;
 
 
 public class JoniParserPlugin
@@ -80,6 +77,8 @@ public class JoniParserPlugin
         PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output);
         TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getColumns());
 
+        ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
+
         String format = task.getFormat();
         logger.info(String.format(Locale.ENGLISH,"format = %s",format));
         byte[] pattern = format.getBytes();
@@ -104,15 +103,31 @@ public class JoniParserPlugin
                          int begin = region.beg[number];
                          int end = region.end[number];
 
-                         String str = new String(line.getBytes(StandardCharsets.UTF_8), begin, end - begin, StandardCharsets.UTF_8);
+                         String strValue = new String(line.getBytes(StandardCharsets.UTF_8), begin, end - begin, StandardCharsets.UTF_8);
                          String name = new String(e.name, e.nameP, e.nameEnd - e.nameP);
-                         logger.debug(String.format(Locale.ENGLISH,"<%s> = %s",name,str));
+                         logger.debug(String.format(Locale.ENGLISH,"<%s> = %s",name,strValue));
+                         setValue(schema,visitor,name,strValue);
                      }
+                    pageBuilder.addRecord();
+
                 } else {
                     logger.warn(String.format(Locale.ENGLISH,"unmatched line = %s",line));
                 }
+
             }
         }
+        pageBuilder.finish();
 
+    }
+    private void setValue(Schema schema,ColumnVisitorImpl visitor,String name,String strValue){
+        try {
+            Value value = ValueFactory.newString(strValue);
+            Column column = schema.lookupColumn(name);
+            visitor.setValue(value);
+            column.visit(visitor);
+        } catch (Exception ex) {
+            throw new SchemaConfigException(String.format(Locale.ENGLISH, "TODO Error"));
+
+        }
     }
 }

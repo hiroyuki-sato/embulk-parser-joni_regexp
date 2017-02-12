@@ -34,6 +34,14 @@ public class JoniParserPlugin
 {
     private static final Logger logger = Exec.getLogger(JoniParserPlugin.class);
 
+    public interface TypecastColumnOption
+            extends Task
+    {
+        @Config("typecast")
+        @ConfigDefault("null")
+        public Optional<Boolean> getTypecast();
+    }
+
     public interface PluginTask
             extends Task,LineDecoder.DecoderTask, TimestampParser.Task
     {
@@ -46,6 +54,10 @@ public class JoniParserPlugin
 
         @Config("format")
         String getFormat();
+
+        @Config("default_typecast")
+        @ConfigDefault("true")
+        Boolean getDefaultTypecast();
 
     }
 

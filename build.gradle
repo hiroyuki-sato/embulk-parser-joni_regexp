@@ -25,6 +25,8 @@ dependencies {
     compile  "org.jruby.joni:joni:2.1.11"
     compile  "org.jruby.jcodings:jcodings:1.0.18"
     testCompile "junit:junit:4.+"
+    testCompile  "org.embulk:embulk-core:0.8.16:tests"
+    testCompile  "org.embulk:embulk-standards:0.8.16"
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {

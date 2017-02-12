@@ -1,0 +1,11 @@
+in:
+  type: file
+  path_prefix: example/test
+  parser:
+    type: joni
+    columns:
+      - { name: test, type: string }
+#    format: "(?<hoge>aaa*),(?<fuga>bbb*),(?<test>ccc)"
+    format: "(?<name>a*) (?<fuga>bbbb*)"
+out:
+  type: stdout

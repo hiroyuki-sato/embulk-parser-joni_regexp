@@ -24,7 +24,9 @@ import org.slf4j.Logger;
 
 import org.jcodings.specific.UTF8Encoding;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Locale;
 
 
 public class JoniParserPlugin
@@ -67,6 +69,7 @@ public class JoniParserPlugin
         TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getColumns());
 
         String format = task.getFormat();
+        logger.info(String.format(Locale.ENGLISH,"format = %s",format));
         byte[] pattern = format.getBytes();
 
         Regex regex = new Regex(pattern,0,pattern.length,Option.NONE,UTF8Encoding.INSTANCE);
@@ -74,17 +77,27 @@ public class JoniParserPlugin
         while (input.nextFile()) {
             while (true) {
                 String line = lineDecoder.poll();
-
+//                logger.debug(String.format(Locale.ENGLISH,"line = %s",line));
                 if (line == null) {
                     break;
                 }
-                Matcher matcher = regex.matcher(pattern);
+                Matcher matcher = regex.matcher(line.getBytes());
                 int result = matcher.search(0,line.getBytes().length,Option.DEFAULT);
+
                 if( result != -1 ){
                      Region region = matcher.getEagerRegion();
                      for(Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ){
                          NameEntry e = entry.next();
+                         int number = e.getBackRefs()[0];
+                         int begin = region.beg[number];
+                         int end = region.end[number];
+
+                         String str = new String(line.getBytes(StandardCharsets.UTF_8), begin, end - begin, StandardCharsets.UTF_8);
+                         String name = new String(e.name, e.nameP, e.nameEnd - e.nameP);
+                         logger.debug(String.format(Locale.ENGLISH,"<%s> = %s",name,str));
                      }
+                } else {
+                    logger.warn(String.format(Locale.ENGLISH,"unmatched line = %s",line));
                 }
             }
         }

@@ -65,6 +65,8 @@ public class JoniParserPlugin
 
         Schema schema = task.getColumns().toSchema();
 
+        validateSchema(task,schema);
+
         control.run(task.dump(), schema);
     }
 
@@ -79,11 +81,7 @@ public class JoniParserPlugin
 
         ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
-        String format = task.getFormat();
-        logger.info(String.format(Locale.ENGLISH,"format = %s",format));
-        byte[] pattern = format.getBytes();
-
-        Regex regex = new Regex(pattern,0,pattern.length,Option.NONE,UTF8Encoding.INSTANCE);
+        Regex regex = buildRegex(task);
 
         while (input.nextFile()) {
             while (true) {
@@ -99,12 +97,13 @@ public class JoniParserPlugin
                      Region region = matcher.getEagerRegion();
                      for(Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ){
                          NameEntry e = entry.next();
+                         String name = captureName(e);
+
                          int number = e.getBackRefs()[0];
                          int begin = region.beg[number];
                          int end = region.end[number];
-
                          String strValue = new String(line.getBytes(StandardCharsets.UTF_8), begin, end - begin, StandardCharsets.UTF_8);
-                         String name = new String(e.name, e.nameP, e.nameEnd - e.nameP);
+
                          logger.debug(String.format(Locale.ENGLISH,"<%s> = %s",name,strValue));
                          setValue(schema,visitor,name,strValue);
                      }
@@ -126,8 +125,33 @@ public class JoniParserPlugin
             visitor.setValue(value);
             column.visit(visitor);
         } catch (Exception ex) {
+            // TODO Error check
             throw new SchemaConfigException(String.format(Locale.ENGLISH, "TODO Error"));
 
         }
+    }
+
+    private Regex buildRegex(PluginTask task)
+    {
+        String format = task.getFormat();
+        byte[] pattern = format.getBytes();
+        return new Regex(pattern,0,pattern.length,Option.NONE,UTF8Encoding.INSTANCE);
+    }
+
+    private String captureName(NameEntry e){
+        return new String(e.name, e.nameP, e.nameEnd - e.nameP);
+    }
+
+    private void validateSchema(PluginTask task,Schema schema)
+    {
+        Regex regex = buildRegex(task);
+        // TODO error check.
+
+        for(Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ){
+            NameEntry e = entry.next();
+            String captureName = captureName(e);
+            schema.lookupColumn(captureName); // throw Exception;
+        }
+
     }
 }

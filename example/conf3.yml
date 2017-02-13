@@ -1,0 +1,12 @@
+in:
+  type: file
+  path_prefix: example/test2.txt
+  parser:
+    type: joni
+    columns:
+      - { name: name,  type: string }
+      - { name: birth, type: timestamp, format: "%Y-%m-%d" }
+      - { name: age,   type: long }
+    format: "(?<hoge>[^,]+),(?<birth>\\d{4}-\\d{2}-\\d{2}),(?<age>\\d+)"
+out:
+  type: stdout

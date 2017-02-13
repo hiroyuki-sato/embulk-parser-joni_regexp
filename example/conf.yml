@@ -1,10 +1,10 @@
 in:
   type: file
-  path_prefix: example/test
+  path_prefix: example/test.txt
   parser:
     type: joni
     columns:
-      - { name: name, type: string }
+      - { name: name2, type: string }
       - { name: fuga, type: string }
 #    format: "(?<hoge>aaa*),(?<fuga>bbb*),(?<test>ccc)"
     format: "(?<name>a*) (?<fuga>bbbb*)"

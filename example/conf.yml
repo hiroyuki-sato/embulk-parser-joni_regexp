@@ -7,6 +7,6 @@ in:
       - { name: name2, type: string }
       - { name: fuga, type: string }
 #    format: "(?<hoge>aaa*),(?<fuga>bbb*),(?<test>ccc)"
-    format: "(?<name>a*) (?<fuga>bbbb*)"
+    format: '(?<name>a*) (?<fuga>bbbb*)'
 out:
   type: stdout

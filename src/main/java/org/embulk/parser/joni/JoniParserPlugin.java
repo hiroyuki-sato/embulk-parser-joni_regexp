@@ -135,6 +135,7 @@ public class JoniParserPlugin
     {
         String format = task.getFormat();
         byte[] pattern = format.getBytes();
+        // throw org.joni.exception.SyntaxException if regex is invalid.
         return new Regex(pattern,0,pattern.length,Option.NONE,UTF8Encoding.INSTANCE);
     }
 
@@ -145,12 +146,11 @@ public class JoniParserPlugin
     private void validateSchema(PluginTask task,Schema schema)
     {
         Regex regex = buildRegex(task);
-        // TODO error check.
 
         for(Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ){
             NameEntry e = entry.next();
             String captureName = captureName(e);
-            schema.lookupColumn(captureName); // throw Exception;
+            schema.lookupColumn(captureName); // throw SchemaConfigException;
         }
 
     }

@@ -105,6 +105,21 @@ public class TestJoniParserPlugin
         }
     }
 
+    @Test(expected = org.embulk.config.ConfigException.class)
+    public void checkNoNamedCapturingGroupRegex()
+            throws Exception
+    {
+        ConfigSource config2 = Exec.newConfigSource()
+                .set("columns", ImmutableList.of(
+                        ImmutableMap.of(
+                                "name", "hoge",
+                                "type", "string")))
+                .set("format", "no named capturing group regex");
+
+        config2.loadConfig(JoniParserPlugin.PluginTask.class);
+        transaction(config2, fileInput(""));
+    }
+
     @Test(expected = org.joni.exception.SyntaxException.class)
     public void checkInvalidRegexSyntax()
             throws Exception

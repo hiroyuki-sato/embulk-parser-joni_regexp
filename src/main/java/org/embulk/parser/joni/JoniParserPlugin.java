@@ -1,12 +1,8 @@
 package org.embulk.parser.joni;
 
 import com.google.common.base.Optional;
+import org.embulk.config.*;
 import org.embulk.config.Config;
-import org.embulk.config.ConfigDefault;
-import org.embulk.config.ConfigDiff;
-import org.embulk.config.ConfigSource;
-import org.embulk.config.Task;
-import org.embulk.config.TaskSource;
 import org.embulk.spi.*;
 
 import org.embulk.spi.json.JsonParser;
@@ -146,7 +142,9 @@ public class JoniParserPlugin
     private void validateSchema(PluginTask task,Schema schema)
     {
         Regex regex = buildRegex(task);
-
+        if( regex.numberOfNames() < 1 ){
+            throw new ConfigException("The regex has no named capturing group");
+        }
         for(Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ){
             NameEntry e = entry.next();
             String captureName = captureName(e);

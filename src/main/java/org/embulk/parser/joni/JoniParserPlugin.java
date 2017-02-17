@@ -1,26 +1,37 @@
 package org.embulk.parser.joni;
 
 import com.google.common.base.Optional;
-import org.embulk.config.*;
 import org.embulk.config.Config;
-import org.embulk.spi.*;
-
-import org.embulk.spi.json.JsonParser;
+import org.embulk.config.ConfigDefault;
+import org.embulk.config.ConfigException;
+import org.embulk.config.ConfigSource;
+import org.embulk.config.Task;
+import org.embulk.config.TaskSource;
+import org.embulk.spi.Column;
+import org.embulk.spi.Exec;
+import org.embulk.spi.FileInput;
+import org.embulk.spi.PageBuilder;
+import org.embulk.spi.PageOutput;
+import org.embulk.spi.ParserPlugin;
+import org.embulk.spi.Schema;
+import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.SchemaConfigException;
 import org.embulk.spi.time.TimestampParser;
-import org.embulk.spi.util.Timestamps;
-
 import org.embulk.spi.util.LineDecoder;
-import org.joni.*;
+import org.embulk.spi.util.Timestamps;
+import org.jcodings.specific.UTF8Encoding;
+import org.joni.Matcher;
+import org.joni.NameEntry;
+import org.joni.Option;
+import org.joni.Regex;
+import org.joni.Region;
+import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 import org.slf4j.Logger;
-
-import org.jcodings.specific.UTF8Encoding;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Locale;
-import org.msgpack.value.Value;
-
 
 public class JoniParserPlugin
         implements ParserPlugin
@@ -36,7 +47,7 @@ public class JoniParserPlugin
     }
 
     public interface PluginTask
-            extends Task,LineDecoder.DecoderTask, TimestampParser.Task
+            extends Task, LineDecoder.DecoderTask, TimestampParser.Task
     {
         @Config("columns")
         SchemaConfig getColumns();
@@ -51,7 +62,6 @@ public class JoniParserPlugin
         @Config("default_typecast")
         @ConfigDefault("true")
         Boolean getDefaultTypecast();
-
     }
 
     @Override
@@ -61,7 +71,7 @@ public class JoniParserPlugin
 
         Schema schema = task.getColumns().toSchema();
 
-        validateSchema(task,schema);
+        validateSchema(task, schema);
 
         control.run(task.dump(), schema);
     }
@@ -87,43 +97,43 @@ public class JoniParserPlugin
                     break;
                 }
                 Matcher matcher = regex.matcher(line.getBytes());
-                int result = matcher.search(0,line.getBytes().length,Option.DEFAULT);
+                int result = matcher.search(0, line.getBytes().length, Option.DEFAULT);
 
-                if( result != -1 ){
-                     Region region = matcher.getEagerRegion();
-                     for(Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ){
-                         NameEntry e = entry.next();
-                         String name = captureName(e);
+                if (result != -1) {
+                    Region region = matcher.getEagerRegion();
+                    for (Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ) {
+                        NameEntry e = entry.next();
+                        String name = captureName(e);
 
-                         int number = e.getBackRefs()[0];
-                         int begin = region.beg[number];
-                         int end = region.end[number];
-                         String strValue = new String(line.getBytes(StandardCharsets.UTF_8), begin, end - begin, StandardCharsets.UTF_8);
+                        int number = e.getBackRefs()[0];
+                        int begin = region.beg[number];
+                        int end = region.end[number];
+                        String strValue = new String(line.getBytes(StandardCharsets.UTF_8), begin, end - begin, StandardCharsets.UTF_8);
 
-                         logger.debug(String.format(Locale.ENGLISH,"<%s> = %s",name,strValue));
-                         setValue(schema,visitor,name,strValue);
-                     }
+                        logger.debug(String.format(Locale.ENGLISH, "<%s> = %s", name, strValue));
+                        setValue(schema, visitor, name, strValue);
+                    }
                     pageBuilder.addRecord();
-
-                } else {
-                    logger.warn(String.format(Locale.ENGLISH,"unmatched line = %s",line));
                 }
-
+                else {
+                    logger.warn(String.format(Locale.ENGLISH, "unmatched line = %s", line));
+                }
             }
         }
         pageBuilder.finish();
-
     }
-    private void setValue(Schema schema,ColumnVisitorImpl visitor,String name,String strValue){
+
+    private void setValue(Schema schema, ColumnVisitorImpl visitor, String name, String strValue)
+    {
         try {
             Value value = ValueFactory.newString(strValue);
             Column column = schema.lookupColumn(name);
             visitor.setValue(value);
             column.visit(visitor);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             // TODO Error check
             throw new SchemaConfigException(String.format(Locale.ENGLISH, "TODO Error"));
-
         }
     }
 
@@ -132,24 +142,24 @@ public class JoniParserPlugin
         String format = task.getFormat();
         byte[] pattern = format.getBytes();
         // throw org.joni.exception.SyntaxException if regex is invalid.
-        return new Regex(pattern,0,pattern.length,Option.NONE,UTF8Encoding.INSTANCE);
+        return new Regex(pattern, 0, pattern.length, Option.NONE, UTF8Encoding.INSTANCE);
     }
 
-    private String captureName(NameEntry e){
+    private String captureName(NameEntry e)
+    {
         return new String(e.name, e.nameP, e.nameEnd - e.nameP);
     }
 
-    private void validateSchema(PluginTask task,Schema schema)
+    private void validateSchema(PluginTask task, Schema schema)
     {
         Regex regex = buildRegex(task);
-        if( regex.numberOfNames() < 1 ){
+        if (regex.numberOfNames() < 1) {
             throw new ConfigException("The regex has no named capturing group");
         }
-        for(Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ){
+        for (Iterator<NameEntry> entry = regex.namedBackrefIterator(); entry.hasNext(); ) {
             NameEntry e = entry.next();
             String captureName = captureName(e);
             schema.lookupColumn(captureName); // throw SchemaConfigException;
         }
-
     }
 }

@@ -46,7 +46,8 @@ public class TestJoniParserPlugin
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
 
     @Test
-    public void checkDefaultValues() {
+    public void checkDefaultValues()
+    {
         ConfigSource config = Exec.newConfigSource()
                 .set("columns", ImmutableList.of(
                         ImmutableMap.of(
@@ -60,7 +61,7 @@ public class TestJoniParserPlugin
         assertEquals(Newline.CRLF, task.getNewline());
         assertEquals(DateTimeZone.UTC, task.getDefaultTimeZone());
         assertEquals("%Y-%m-%d %H:%M:%S.%N %z", task.getDefaultTimestampFormat());
-        assertEquals( false, task.getStopOnInvalidRecord());
+        assertEquals(false, task.getStopOnInvalidRecord());
         //assertEquals( true, task.getDefaultTypecast());
 
     }
@@ -135,8 +136,6 @@ public class TestJoniParserPlugin
         transaction(config2, fileInput(""));
     }
 
-
-
     private void transaction(ConfigSource config, final FileInput input)
     {
         plugin.transaction(config, new ParserPlugin.Control()
@@ -153,7 +152,6 @@ public class TestJoniParserPlugin
     {
         output = new TestPageBuilderReader.MockPageOutput();
     }
-
 
     private FileInput fileInput(String... lines)
             throws Exception
@@ -178,5 +176,4 @@ public class TestJoniParserPlugin
     {
         return runtime.getExec().newConfigSource();
     }
-
 }

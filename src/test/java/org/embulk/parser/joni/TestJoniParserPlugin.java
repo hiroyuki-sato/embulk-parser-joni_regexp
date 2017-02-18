@@ -37,7 +37,7 @@ public class TestJoniParserPlugin
     @Before
     public void createResource()
     {
-        config = config().set("type", "jsonpath");
+        config = config().set("type", "joni");
         plugin = new JoniParserPlugin();
         recreatePageOutput();
     }

@@ -231,7 +231,7 @@ public class TestJoniParserPlugin
         }
     }
 
-    @Test
+    @Test(expected=DataException.class)
     public void checkInvalidFormat()
             throws Exception
     {

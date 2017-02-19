@@ -211,6 +211,33 @@ public class TestJoniParserPlugin
     }
 
     @Test
+    public void checkLookahead()
+            throws Exception
+    {
+
+        SchemaConfig schema = schema(
+                column("string1", STRING), column("string2", STRING));
+
+        ConfigSource config = this.config.deepCopy().set("columns", schema)
+                .set("format", "^\"(?<string1>.*?)\"(?<!\\.) \"(?<string2>.*?)\"");
+
+
+        transaction(config, fileInput(
+                "\"This is a \\\"test\\\".\" \"This is a \\\"test\\\".\"]}"));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(1, records.size());
+
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals("This is a \\\"test\\\".", record[0]);
+            assertEquals("This is a \\", record[1]);
+        }
+    }
+
+    @Test
     public void checkAllColumnTypes()
             throws Exception
     {

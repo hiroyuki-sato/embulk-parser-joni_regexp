@@ -2,7 +2,7 @@ in:
   type: file
   path_prefix: example/test2.txt
   parser:
-    type: joni
+    type: joni_regexp
     columns:
       - { name: name,  type: string }
       - { name: birth, type: timestamp, format: "%Y-%m-%d" }

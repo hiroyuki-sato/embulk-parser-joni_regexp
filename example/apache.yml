@@ -2,7 +2,7 @@ in:
   type: file
   path_prefix: example/apache.txt
   parser:
-    type: joni
+    type: joni_regexp
     columns:
       - { name: host, type: string }
       - { name: user, type: string }

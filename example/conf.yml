@@ -2,7 +2,7 @@ in:
   type: file
   path_prefix: example/test.txt
   parser:
-    type: joni
+    type: joni_regexp
     columns:
       - { name: name2, type: string }
       - { name: fuga, type: string }

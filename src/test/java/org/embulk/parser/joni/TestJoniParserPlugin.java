@@ -25,7 +25,6 @@ import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.msgpack.value.ImmutableMapValue;
 import org.msgpack.value.MapValue;
 
 import java.io.ByteArrayInputStream;
@@ -36,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.embulk.spi.MockFormatterPlugin.records;
 import static org.embulk.spi.type.Types.BOOLEAN;
 import static org.embulk.spi.type.Types.DOUBLE;
 import static org.embulk.spi.type.Types.JSON;
@@ -45,10 +43,10 @@ import static org.embulk.spi.type.Types.STRING;
 import static org.embulk.spi.type.Types.TIMESTAMP;
 import static org.junit.Assert.assertTrue;
 import static org.msgpack.value.ValueFactory.newArray;
+import static org.msgpack.value.ValueFactory.newFloat;
 import static org.msgpack.value.ValueFactory.newInteger;
 import static org.msgpack.value.ValueFactory.newMap;
 import static org.msgpack.value.ValueFactory.newString;
-import static org.msgpack.value.ValueFactory.newFloat;
 
 public class TestJoniParserPlugin
 {
@@ -144,7 +142,7 @@ public class TestJoniParserPlugin
                 column("agent", STRING));
         ConfigSource config = this.config.deepCopy().set("columns", schema)
                 .set("format", "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \\[(?<time>[^\\]]*)\\] \"(?<method>\\S+)(?: +(?<path>[^ ]*) +\\S*)?\" (?<code>[^ ]*) (?<size>[^ ]*)(?: \"(?<referer>[^\\\"]*)\" \"(?<agent>[^\\\"]*)\")?$")
-                .set("stop_on_invalid_record",false);
+                .set("stop_on_invalid_record", false);
 
 //        config.loadConfig(JoniParserPlugin.PluginTask.class);
 
@@ -186,12 +184,11 @@ public class TestJoniParserPlugin
         }
     }
 
-
-    @Test(expected=DataException.class)
+    @Test(expected = DataException.class)
     public void checkInvalidRecord()
             throws Exception
     {
-         SchemaConfig schema = schema(
+        SchemaConfig schema = schema(
                 column("host", STRING), column("user", STRING),
                 column("time", TIMESTAMP, config().set("format", "%d/%b/%Y:%H:%M:%S %z")),
                 column("method", STRING), column("path", STRING),
@@ -199,7 +196,7 @@ public class TestJoniParserPlugin
                 column("agent", STRING));
         ConfigSource config = this.config.deepCopy().set("columns", schema)
                 .set("format", "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \\[(?<time>[^\\]]*)\\] \"(?<method>\\S+)(?: +(?<path>[^ ]*) +\\S*)?\" (?<code>[^ ]*) (?<size>[^ ]*)(?: \"(?<referer>[^\\\"]*)\" \"(?<agent>[^\\\"]*)\")?$")
-                .set("stop_on_invalid_record",true);
+                .set("stop_on_invalid_record", true);
 
         transaction(config, fileInput(
                 "224.126.227.109 - - [13/Feb/2017:20:04:52 +0900] \"GET /category/games HTTP/1.1\" 200 85 \"-\" \"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11\"",
@@ -207,7 +204,6 @@ public class TestJoniParserPlugin
                 "128.27.132.24 - bob [13/Feb/2017:20:04:53 +0900] \"GET /category/health HTTP/1.1\" 200 103 \"/category/electronics?from=20\" \"Mozilla/5.0 (Windows NT 6.0; rv:10.0.1) Gecko/20100101 Firefox/10.0.1\"",
                 "invalid_record2"
         ));
-
     }
 
     @Test
@@ -221,13 +217,11 @@ public class TestJoniParserPlugin
         ConfigSource config = this.config.deepCopy().set("columns", schema)
                 .set("format", "^\"(?<string1>.*?)\"(?<!\\.) \"(?<string2>.*?)\"");
 
-
         transaction(config, fileInput(
                 "\"This is a \\\"test\\\".\" \"This is a \\\"test\\\".\"]}"));
 
         List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
         assertEquals(1, records.size());
-
 
         Object[] record;
         {
@@ -243,16 +237,13 @@ public class TestJoniParserPlugin
     {
 
         SchemaConfig schema = schema(
-                column("date", TIMESTAMP, config().set("format","%H:%M:%S")));
+                column("date", TIMESTAMP, config().set("format", "%H:%M:%S")));
 
         ConfigSource config = this.config.deepCopy().set("columns", schema)
                 .set("format", "(?<date>\\S+)");
 
-
         transaction(config, fileInput(
                 "2017-02-19 This is a test."));
-
-
     }
 
     @Test
@@ -269,18 +260,16 @@ public class TestJoniParserPlugin
         ConfigSource config = this.config.deepCopy().set("columns", schema)
                 .set("format", "^(?<bool>[^\t]*)\t(?<string>[^\t]*)\t(?<time>[^\t]*)\t*(?<long>[^\t]*)\t(?<double>[^\t]*)\t(?<json>[^\t]*)$");
 
-
         transaction(config, fileInput(
                 "true\tマイケル・ジャクソン\t2009-6-25  00:00:00\t456789\t123.456\t{\"name\":\"Michael Jackson\",\"birth\":\"1958-8-29\",\"age\":50,\"Bad World Tour\":4.4,\"album\":[\"Got To Be There\",\"Ben\",\"Music & Me\"]}"));
 
-        MapValue json = newMap(newString("name"),newString("Michael Jackson"),
-                newString("birth"),newString("1958-8-29"),
-                newString("age"),newInteger(50),
-                newString("Bad World Tour"),newFloat(4.4),
-                newString("album"),newArray(newString("Got To Be There"),newString("Ben"),newString("Music & Me")));
+        MapValue json = newMap(newString("name"), newString("Michael Jackson"),
+                newString("birth"), newString("1958-8-29"),
+                newString("age"), newInteger(50),
+                newString("Bad World Tour"), newFloat(4.4),
+                newString("album"), newArray(newString("Got To Be There"), newString("Ben"), newString("Music & Me")));
         List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
         assertEquals(1, records.size());
-
 
         Object[] record;
         {
@@ -293,7 +282,6 @@ public class TestJoniParserPlugin
 //            assertEquals(json, record[5]); // TODO
         }
     }
-
 
     @Test
     public void checkDefaultValues()

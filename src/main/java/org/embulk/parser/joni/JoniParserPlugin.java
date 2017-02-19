@@ -16,7 +16,6 @@ import org.embulk.spi.PageOutput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
-import org.embulk.spi.SchemaConfigException;
 import org.embulk.spi.time.TimestampParser;
 import org.embulk.spi.util.LineDecoder;
 import org.embulk.spi.util.Timestamps;
@@ -116,7 +115,7 @@ public class JoniParserPlugin
                     }
                     pageBuilder.addRecord();
                 }
-                else if ( task.getStopOnInvalidRecord() == false ){
+                else if (task.getStopOnInvalidRecord() == false) {
                     logger.warn(String.format(Locale.ENGLISH, "skip unmatched line = %s", line));
                 }
                 else {
@@ -136,7 +135,7 @@ public class JoniParserPlugin
             column.visit(visitor);
         }
         catch (Exception ex) {
-            throw new DataException(String.format(Locale.ENGLISH, "Set value failed. column = \"%s\" value = \"%s\", reason = \"%s\"",name,strValue,ex.getMessage()));
+            throw new DataException(String.format(Locale.ENGLISH, "Set value failed. column = \"%s\" value = \"%s\", reason = \"%s\"", name, strValue, ex.getMessage()));
         }
     }
 

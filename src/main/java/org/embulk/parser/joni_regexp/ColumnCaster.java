@@ -1,10 +1,10 @@
-package org.embulk.parser.joni;
+package org.embulk.parser.joni_regexp;
 
-import org.embulk.parser.joni.cast.BooleanCast;
-import org.embulk.parser.joni.cast.DoubleCast;
-import org.embulk.parser.joni.cast.JsonCast;
-import org.embulk.parser.joni.cast.LongCast;
-import org.embulk.parser.joni.cast.StringCast;
+import org.embulk.parser.joni_regexp.cast.BooleanCast;
+import org.embulk.parser.joni_regexp.cast.DoubleCast;
+import org.embulk.parser.joni_regexp.cast.JsonCast;
+import org.embulk.parser.joni_regexp.cast.LongCast;
+import org.embulk.parser.joni_regexp.cast.StringCast;
 import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.time.TimestampParser;

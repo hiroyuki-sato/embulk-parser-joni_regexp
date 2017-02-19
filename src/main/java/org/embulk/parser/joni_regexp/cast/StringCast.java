@@ -1,4 +1,4 @@
-package org.embulk.parser.joni.cast;
+package org.embulk.parser.joni_regexp.cast;
 
 import com.google.common.collect.ImmutableSet;
 import org.embulk.spi.DataException;

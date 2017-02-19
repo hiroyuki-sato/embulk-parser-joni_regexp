@@ -1,8 +1,8 @@
-package org.embulk.parser.joni;
+package org.embulk.parser.joni_regexp;
 
 import com.google.common.base.Optional;
-import org.embulk.parser.joni.JoniParserPlugin.PluginTask;
-import org.embulk.parser.joni.JoniParserPlugin.TypecastColumnOption;
+import org.embulk.parser.joni_regexp.JoniRegexpParserPlugin.PluginTask;
+import org.embulk.parser.joni_regexp.JoniRegexpParserPlugin.TypecastColumnOption;
 
 import org.embulk.spi.Column;
 import org.embulk.spi.ColumnConfig;

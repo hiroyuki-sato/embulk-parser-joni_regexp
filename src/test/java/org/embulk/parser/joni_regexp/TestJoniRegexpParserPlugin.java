@@ -1,4 +1,4 @@
-package org.embulk.parser.joni;
+package org.embulk.parser.joni_regexp;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -48,10 +48,10 @@ import static org.msgpack.value.ValueFactory.newInteger;
 import static org.msgpack.value.ValueFactory.newMap;
 import static org.msgpack.value.ValueFactory.newString;
 
-public class TestJoniParserPlugin
+public class TestJoniRegexpParserPlugin
 {
     private ConfigSource config;
-    private JoniParserPlugin plugin;
+    private JoniRegexpParserPlugin plugin;
     private TestPageBuilderReader.MockPageOutput output;
 
     // TODO
@@ -60,8 +60,8 @@ public class TestJoniParserPlugin
     @Before
     public void createResource()
     {
-        config = config().set("type", "joni");
-        plugin = new JoniParserPlugin();
+        config = config().set("type", "joni_regexp");
+        plugin = new JoniRegexpParserPlugin();
         recreatePageOutput();
     }
 
@@ -88,7 +88,7 @@ public class TestJoniParserPlugin
         ConfigSource config = this.config.deepCopy().set("columns", schema)
                 .set("format", "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \\[(?<time>[^\\]]*)\\] \"(?<method>\\S+)(?: +(?<path>[^ ]*) +\\S*)?\" (?<code>[^ ]*) (?<size>[^ ]*)(?: \"(?<referer>[^\\\"]*)\" \"(?<agent>[^\\\"]*)\")?$");
 
-//        config.loadConfig(JoniParserPlugin.PluginTask.class);
+//        config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
 
         transaction(config, fileInput(
                 "224.126.227.109 - - [13/Feb/2017:20:04:52 +0900] \"GET /category/games HTTP/1.1\" 200 85 \"-\" \"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11\"",
@@ -144,7 +144,7 @@ public class TestJoniParserPlugin
                 .set("format", "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \\[(?<time>[^\\]]*)\\] \"(?<method>\\S+)(?: +(?<path>[^ ]*) +\\S*)?\" (?<code>[^ ]*) (?<size>[^ ]*)(?: \"(?<referer>[^\\\"]*)\" \"(?<agent>[^\\\"]*)\")?$")
                 .set("stop_on_invalid_record", false);
 
-//        config.loadConfig(JoniParserPlugin.PluginTask.class);
+//        config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
 
         transaction(config, fileInput(
                 "224.126.227.109 - - [13/Feb/2017:20:04:52 +0900] \"GET /category/games HTTP/1.1\" 200 85 \"-\" \"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11\"",
@@ -293,7 +293,7 @@ public class TestJoniParserPlugin
                                 "type", "string")))
                 .set("format", "(?<name>a*)");
 
-        JoniParserPlugin.PluginTask task = config.loadConfig(JoniParserPlugin.PluginTask.class);
+        JoniRegexpParserPlugin.PluginTask task = config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
 
         assertEquals(Charset.forName("utf-8"), task.getCharset());
         assertEquals(Newline.CRLF, task.getNewline());
@@ -310,7 +310,7 @@ public class TestJoniParserPlugin
         ConfigSource config = Exec.newConfigSource()
                 .set("format", "(?<name>a*)");
 
-        config.loadConfig(JoniParserPlugin.PluginTask.class);
+        config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
     }
 
     @Test(expected = ConfigException.class)
@@ -322,7 +322,7 @@ public class TestJoniParserPlugin
                                 "name", "name",
                                 "type", "string")));
 
-        config.loadConfig(JoniParserPlugin.PluginTask.class);
+        config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
     }
 
     @Test // (expected = SchemaConfigException.class)
@@ -335,7 +335,7 @@ public class TestJoniParserPlugin
                                 "type", "string")))
                 .set("format", "(?<no_capture_name>a*)");
 
-        config2.loadConfig(JoniParserPlugin.PluginTask.class);
+        config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
         try {
             transaction(config2, fileInput(""));
         }
@@ -355,7 +355,7 @@ public class TestJoniParserPlugin
                                 "type", "string")))
                 .set("format", "no named capturing group regex");
 
-        config2.loadConfig(JoniParserPlugin.PluginTask.class);
+        config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
         transaction(config2, fileInput(""));
     }
 
@@ -370,7 +370,7 @@ public class TestJoniParserPlugin
                                 "type", "string")))
                 .set("format", "(?<invalid_regex");
 
-        config2.loadConfig(JoniParserPlugin.PluginTask.class);
+        config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
         transaction(config2, fileInput(""));
     }
 

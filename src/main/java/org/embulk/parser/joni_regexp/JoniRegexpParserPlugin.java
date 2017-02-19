@@ -1,4 +1,4 @@
-package org.embulk.parser.joni;
+package org.embulk.parser.joni_regexp;
 
 import com.google.common.base.Optional;
 import org.embulk.config.Config;
@@ -33,10 +33,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Locale;
 
-public class JoniParserPlugin
+public class JoniRegexpParserPlugin
         implements ParserPlugin
 {
-    private static final Logger logger = Exec.getLogger(JoniParserPlugin.class);
+    private static final Logger logger = Exec.getLogger(JoniRegexpParserPlugin.class);
 
     public interface TypecastColumnOption
             extends Task

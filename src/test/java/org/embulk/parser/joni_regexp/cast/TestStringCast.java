@@ -1,4 +1,4 @@
-package org.embulk.parser.joni.cast;
+package org.embulk.parser.joni_regexp.cast;
 
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.spi.DataException;

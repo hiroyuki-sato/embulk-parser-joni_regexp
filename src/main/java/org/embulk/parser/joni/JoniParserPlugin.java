@@ -8,6 +8,7 @@ import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.Column;
+import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
 import org.embulk.spi.PageBuilder;
@@ -115,8 +116,11 @@ public class JoniParserPlugin
                     }
                     pageBuilder.addRecord();
                 }
+                else if ( task.getStopOnInvalidRecord() == false ){
+                    logger.warn(String.format(Locale.ENGLISH, "skip unmatched line = %s", line));
+                }
                 else {
-                    logger.warn(String.format(Locale.ENGLISH, "unmatched line = %s", line));
+                    throw new DataException(String.format("Invalid record at line %s", line));
                 }
             }
         }

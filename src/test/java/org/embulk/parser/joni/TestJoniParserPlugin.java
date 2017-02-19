@@ -8,6 +8,7 @@ import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.ColumnConfig;
+import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
 import org.embulk.spi.ParserPlugin;
@@ -114,6 +115,89 @@ public class TestJoniParserPlugin
             assertEquals("Mozilla/5.0 (Windows NT 6.0; rv:10.0.1) Gecko/20100101 Firefox/10.0.1", record[8]);
         }
     }
+
+    @Test
+    public void basicApacheCombinedLogTestEnableStopOnInvalidRecord()
+            throws Exception
+    {
+        // TODO Use TestingEmbulk
+        //        ConfigSource config = embulk.loadYamlResource(RESOURCE_NAME_PREFIX+"apache.yml");
+
+        SchemaConfig schema = schema(
+                column("host", STRING), column("user", STRING),
+                column("time", TIMESTAMP, config().set("format", "%d/%b/%Y:%H:%M:%S %z")),
+                column("method", STRING), column("path", STRING),
+                column("code", STRING), column("size", STRING), column("referer", STRING),
+                column("agent", STRING));
+        ConfigSource config = this.config.deepCopy().set("columns", schema)
+                .set("format", "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \\[(?<time>[^\\]]*)\\] \"(?<method>\\S+)(?: +(?<path>[^ ]*) +\\S*)?\" (?<code>[^ ]*) (?<size>[^ ]*)(?: \"(?<referer>[^\\\"]*)\" \"(?<agent>[^\\\"]*)\")?$")
+                .set("stop_on_invalid_record",false);
+
+//        config.loadConfig(JoniParserPlugin.PluginTask.class);
+
+        transaction(config, fileInput(
+                "224.126.227.109 - - [13/Feb/2017:20:04:52 +0900] \"GET /category/games HTTP/1.1\" 200 85 \"-\" \"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11\"",
+                "invalid_record1",
+                "128.27.132.24 - bob [13/Feb/2017:20:04:53 +0900] \"GET /category/health HTTP/1.1\" 200 103 \"/category/electronics?from=20\" \"Mozilla/5.0 (Windows NT 6.0; rv:10.0.1) Gecko/20100101 Firefox/10.0.1\"",
+                "invalid_record2"
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(2, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals("224.126.227.109", record[0]);
+            assertEquals("-", record[1]);
+            assertEquals(Timestamp.ofEpochSecond(1486983892L), record[2]);
+            assertEquals("GET", record[3]);
+            assertEquals("/category/games", record[4]);
+//            assertEquals("HTTP/1.1", record[5]);
+            assertEquals("200", record[5]);
+            assertEquals("85", record[6]);
+            assertEquals("-", record[7]);
+            assertEquals("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11", record[8]);
+        }
+        {
+            record = records.get(1);
+            assertEquals("128.27.132.24", record[0]);
+            assertEquals("bob", record[1]);
+            assertEquals(Timestamp.ofEpochSecond(1486983893L), record[2]);
+            assertEquals("GET", record[3]);
+            assertEquals("/category/health", record[4]);
+//            assertEquals("HTTP/1.1", record[5]);
+            assertEquals("200", record[5]);
+            assertEquals("103", record[6]);
+            assertEquals("/category/electronics?from=20", record[7]);
+            assertEquals("Mozilla/5.0 (Windows NT 6.0; rv:10.0.1) Gecko/20100101 Firefox/10.0.1", record[8]);
+        }
+    }
+
+
+    @Test(expected=DataException.class)
+    public void checkInvalidRecord()
+            throws Exception
+    {
+         SchemaConfig schema = schema(
+                column("host", STRING), column("user", STRING),
+                column("time", TIMESTAMP, config().set("format", "%d/%b/%Y:%H:%M:%S %z")),
+                column("method", STRING), column("path", STRING),
+                column("code", STRING), column("size", STRING), column("referer", STRING),
+                column("agent", STRING));
+        ConfigSource config = this.config.deepCopy().set("columns", schema)
+                .set("format", "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \\[(?<time>[^\\]]*)\\] \"(?<method>\\S+)(?: +(?<path>[^ ]*) +\\S*)?\" (?<code>[^ ]*) (?<size>[^ ]*)(?: \"(?<referer>[^\\\"]*)\" \"(?<agent>[^\\\"]*)\")?$")
+                .set("stop_on_invalid_record",true);
+
+        transaction(config, fileInput(
+                "224.126.227.109 - - [13/Feb/2017:20:04:52 +0900] \"GET /category/games HTTP/1.1\" 200 85 \"-\" \"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11\"",
+                "invalid_record1",
+                "128.27.132.24 - bob [13/Feb/2017:20:04:53 +0900] \"GET /category/health HTTP/1.1\" 200 103 \"/category/electronics?from=20\" \"Mozilla/5.0 (Windows NT 6.0; rv:10.0.1) Gecko/20100101 Firefox/10.0.1\"",
+                "invalid_record2"
+        ));
+
+    }
+
 
     @Test
     public void checkDefaultValues()

@@ -136,8 +136,7 @@ public class JoniParserPlugin
             column.visit(visitor);
         }
         catch (Exception ex) {
-            // TODO Error check
-            throw new SchemaConfigException(String.format(Locale.ENGLISH, "TODO Error"));
+            throw new DataException(String.format(Locale.ENGLISH, "Set value failed. column = \"%s\" value = \"%s\", reason = \"%s\"",name,strValue,ex.getMessage()));
         }
     }
 

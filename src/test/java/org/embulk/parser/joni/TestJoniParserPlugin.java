@@ -238,6 +238,24 @@ public class TestJoniParserPlugin
     }
 
     @Test
+    public void checkInvalidFormat()
+            throws Exception
+    {
+
+        SchemaConfig schema = schema(
+                column("date", TIMESTAMP, config().set("format","%H:%M:%S")));
+
+        ConfigSource config = this.config.deepCopy().set("columns", schema)
+                .set("format", "(?<date>\\S+)");
+
+
+        transaction(config, fileInput(
+                "2017-02-19 This is a test."));
+
+
+    }
+
+    @Test
     public void checkAllColumnTypes()
             throws Exception
     {

@@ -25,6 +25,8 @@ import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.msgpack.value.ImmutableMapValue;
+import org.msgpack.value.MapValue;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -34,9 +36,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.embulk.spi.MockFormatterPlugin.records;
+import static org.embulk.spi.type.Types.BOOLEAN;
+import static org.embulk.spi.type.Types.DOUBLE;
+import static org.embulk.spi.type.Types.JSON;
+import static org.embulk.spi.type.Types.LONG;
 import static org.embulk.spi.type.Types.STRING;
 import static org.embulk.spi.type.Types.TIMESTAMP;
 import static org.junit.Assert.assertTrue;
+import static org.msgpack.value.ValueFactory.newArray;
+import static org.msgpack.value.ValueFactory.newInteger;
+import static org.msgpack.value.ValueFactory.newMap;
+import static org.msgpack.value.ValueFactory.newString;
+import static org.msgpack.value.ValueFactory.newFloat;
 
 public class TestJoniParserPlugin
 {
@@ -44,7 +56,8 @@ public class TestJoniParserPlugin
     private JoniParserPlugin plugin;
     private TestPageBuilderReader.MockPageOutput output;
 
-    private static final String RESOURCE_NAME_PREFIX = "org/embulk/parser/joni/";
+    // TODO
+//     private static final String RESOURCE_NAME_PREFIX = "org/embulk/parser/joni/";
 
     @Before
     public void createResource()
@@ -166,7 +179,6 @@ public class TestJoniParserPlugin
             assertEquals(Timestamp.ofEpochSecond(1486983893L), record[2]);
             assertEquals("GET", record[3]);
             assertEquals("/category/health", record[4]);
-//            assertEquals("HTTP/1.1", record[5]);
             assertEquals("200", record[5]);
             assertEquals("103", record[6]);
             assertEquals("/category/electronics?from=20", record[7]);
@@ -196,6 +208,45 @@ public class TestJoniParserPlugin
                 "invalid_record2"
         ));
 
+    }
+
+    @Test
+    public void checkAllColumnTypes()
+            throws Exception
+    {
+
+        SchemaConfig schema = schema(
+                column("bool", BOOLEAN), column("string", STRING),
+                column("time", TIMESTAMP, config().set("format", "%Y-%m-%d %H:%M:%S")),
+                column("long", LONG), column("double", DOUBLE),
+                column("json", JSON));
+
+        ConfigSource config = this.config.deepCopy().set("columns", schema)
+                .set("format", "^(?<bool>[^\t]*)\t(?<string>[^\t]*)\t(?<time>[^\t]*)\t*(?<long>[^\t]*)\t(?<double>[^\t]*)\t(?<json>[^\t]*)$");
+
+
+        transaction(config, fileInput(
+                "true\tマイケル・ジャクソン\t2009-6-25  00:00:00\t456789\t123.456\t{\"name\":\"Michael Jackson\",\"birth\":\"1958-8-29\",\"age\":50,\"Bad World Tour\":4.4,\"album\":[\"Got To Be There\",\"Ben\",\"Music & Me\"]}"));
+
+        MapValue json = newMap(newString("name"),newString("Michael Jackson"),
+                newString("birth"),newString("1958-8-29"),
+                newString("age"),newInteger(50),
+                newString("Bad World Tour"),newFloat(4.4),
+                newString("album"),newArray(newString("Got To Be There"),newString("Ben"),newString("Music & Me")));
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(1, records.size());
+
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals(true, record[0]);
+            assertEquals("マイケル・ジャクソン", record[1]);
+            assertEquals(Timestamp.ofEpochSecond(1245888000L), record[2]);
+            assertEquals(456789L, record[3]);
+            assertEquals(123.456, record[4]);
+//            assertEquals(json, record[5]); // TODO
+        }
     }
 
 

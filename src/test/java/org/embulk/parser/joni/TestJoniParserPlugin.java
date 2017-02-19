@@ -2,18 +2,24 @@ package org.embulk.parser.joni;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskSource;
+import org.embulk.spi.ColumnConfig;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
+import org.embulk.spi.SchemaConfig;
 import org.embulk.spi.SchemaConfigException;
 import org.embulk.spi.TestPageBuilderReader;
+import org.embulk.spi.time.Timestamp;
+import org.embulk.spi.type.Type;
 import org.embulk.spi.util.InputStreamFileInput;
 import org.embulk.spi.util.Newline;
+import org.embulk.spi.util.Pages;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,8 +30,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.embulk.spi.type.Types.STRING;
+import static org.embulk.spi.type.Types.TIMESTAMP;
 import static org.junit.Assert.assertTrue;
 
 public class TestJoniParserPlugin
@@ -33,6 +42,8 @@ public class TestJoniParserPlugin
     private ConfigSource config;
     private JoniParserPlugin plugin;
     private TestPageBuilderReader.MockPageOutput output;
+
+    private static final String RESOURCE_NAME_PREFIX = "org/embulk/parser/joni/";
 
     @Before
     public void createResource()
@@ -44,6 +55,65 @@ public class TestJoniParserPlugin
 
     @Rule
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
+
+//    TODO use TestingEmbulk
+//    @Rule
+//    public TestingEmbulk embulk = TestingEmbulk.builder().build();
+
+    @Test
+    public void basicApacheCombinedLogTest()
+            throws Exception
+    {
+        // TODO Use TestingEmbulk
+        //        ConfigSource config = embulk.loadYamlResource(RESOURCE_NAME_PREFIX+"apache.yml");
+
+        SchemaConfig schema = schema(
+                column("host", STRING), column("user", STRING),
+                column("time", TIMESTAMP, config().set("format", "%d/%b/%Y:%H:%M:%S %z")),
+                column("method", STRING), column("path", STRING),
+                column("code", STRING), column("size", STRING), column("referer", STRING),
+                column("agent", STRING));
+        ConfigSource config = this.config.deepCopy().set("columns", schema)
+                .set("format", "^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \\[(?<time>[^\\]]*)\\] \"(?<method>\\S+)(?: +(?<path>[^ ]*) +\\S*)?\" (?<code>[^ ]*) (?<size>[^ ]*)(?: \"(?<referer>[^\\\"]*)\" \"(?<agent>[^\\\"]*)\")?$");
+
+//        config.loadConfig(JoniParserPlugin.PluginTask.class);
+
+        transaction(config, fileInput(
+                "224.126.227.109 - - [13/Feb/2017:20:04:52 +0900] \"GET /category/games HTTP/1.1\" 200 85 \"-\" \"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11\"",
+                "128.27.132.24 - bob [13/Feb/2017:20:04:53 +0900] \"GET /category/health HTTP/1.1\" 200 103 \"/category/electronics?from=20\" \"Mozilla/5.0 (Windows NT 6.0; rv:10.0.1) Gecko/20100101 Firefox/10.0.1\""
+        ));
+
+        List<Object[]> records = Pages.toObjects(schema.toSchema(), output.pages);
+        assertEquals(2, records.size());
+
+        Object[] record;
+        {
+            record = records.get(0);
+            assertEquals("224.126.227.109", record[0]);
+            assertEquals("-", record[1]);
+            assertEquals(Timestamp.ofEpochSecond(1486983892L), record[2]);
+            assertEquals("GET", record[3]);
+            assertEquals("/category/games", record[4]);
+//            assertEquals("HTTP/1.1", record[5]);
+            assertEquals("200", record[5]);
+            assertEquals("85", record[6]);
+            assertEquals("-", record[7]);
+            assertEquals("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11", record[8]);
+        }
+        {
+            record = records.get(1);
+            assertEquals("128.27.132.24", record[0]);
+            assertEquals("bob", record[1]);
+            assertEquals(Timestamp.ofEpochSecond(1486983893L), record[2]);
+            assertEquals("GET", record[3]);
+            assertEquals("/category/health", record[4]);
+//            assertEquals("HTTP/1.1", record[5]);
+            assertEquals("200", record[5]);
+            assertEquals("103", record[6]);
+            assertEquals("/category/electronics?from=20", record[7]);
+            assertEquals("Mozilla/5.0 (Windows NT 6.0; rv:10.0.1) Gecko/20100101 Firefox/10.0.1", record[8]);
+        }
+    }
 
     @Test
     public void checkDefaultValues()
@@ -175,5 +245,20 @@ public class TestJoniParserPlugin
     private ConfigSource config()
     {
         return runtime.getExec().newConfigSource();
+    }
+
+    private SchemaConfig schema(ColumnConfig... columns)
+    {
+        return new SchemaConfig(Lists.newArrayList(columns));
+    }
+
+    private ColumnConfig column(String name, Type type)
+    {
+        return column(name, type, config());
+    }
+
+    private ColumnConfig column(String name, Type type, ConfigSource option)
+    {
+        return new ColumnConfig(name, type, option);
     }
 }

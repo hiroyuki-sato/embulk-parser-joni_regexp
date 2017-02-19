@@ -83,7 +83,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Hiroyuki Sato"]
   spec.summary       = %[Joni parser plugin for Embulk]
   spec.description   = %[Parses Joni files read by other file input plugins.]
-  spec.email         = ["hsato@archsystem.com"]
+  spec.email         = ["hiroysato@gmail.com"]
   spec.licenses      = ["MIT"]
   # TODO set this: spec.homepage      = "https://github.com/hsato/embulk-parser-joni"
 

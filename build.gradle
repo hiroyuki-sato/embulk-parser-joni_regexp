@@ -81,11 +81,11 @@ Gem::Specification.new do |spec|
   spec.name          = "${project.name}"
   spec.version       = "${project.version}"
   spec.authors       = ["Hiroyuki Sato"]
-  spec.summary       = %[Joni parser plugin for Embulk]
-  spec.description   = %[Parses Joni files read by other file input plugins.]
+  spec.summary       = %[A Regular expression(Joni) parser plugin for Embulk]
+  spec.description   = %[A Regular expression parser plugin. Using Joni regular expression library. Fluentd regex parser also use Joni.]
   spec.email         = ["hiroysato@gmail.com"]
   spec.licenses      = ["MIT"]
-  spec.homepage      = "https://github.com/hsato/embulk-parser-joni_regexp"
+  spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-joni_regexp"
 
   spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
   spec.test_files    = spec.files.grep(%r"^(test|spec)/")

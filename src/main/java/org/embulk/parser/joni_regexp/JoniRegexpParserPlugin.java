@@ -97,8 +97,9 @@ public class JoniRegexpParserPlugin
                 if (line == null) {
                     break;
                 }
-                Matcher matcher = regex.matcher(line.getBytes(StandardCharsets.UTF_8));
-                int result = matcher.search(0, line.getBytes(StandardCharsets.UTF_8).length, Option.DEFAULT);
+                byte[] line_bytes = line.getBytes(StandardCharsets.UTF_8);
+                Matcher matcher = regex.matcher(line_bytes);
+                int result = matcher.search(0, line_bytes.length, Option.DEFAULT);
 
                 if (result != -1) {
                     Region region = matcher.getEagerRegion();

@@ -110,7 +110,7 @@ public class JoniRegexpParserPlugin
                         int number = e.getBackRefs()[0];
                         int begin = region.beg[number];
                         int end = region.end[number];
-                        String strValue = new String(line.getBytes(StandardCharsets.UTF_8), begin, end - begin, StandardCharsets.UTF_8);
+                        String strValue = new String(line_bytes, begin, end - begin, StandardCharsets.UTF_8);
 
                         logger.debug(String.format(Locale.ENGLISH, "<%s> = %s", name, strValue));
                         setValue(schema, visitor, name, strValue);

@@ -1,8 +1,8 @@
 # A Regular expression(Joni) parser plugin for Embulk
 
-This is a regular expression parser plugin for Embulk. 
-It use [Joni](https://github.com/jruby/joni) regular expression library. 
-The Joni is Java port of [Oniguruma] regexp library. 
+This is a regular expression parser plugin for Embulk.
+It use [Joni](https://github.com/jruby/joni) regular expression library.
+The Joni is Java port of [Oniguruma](https://github.com/kkos/oniguruma) regexp library.
 
 The [Fluentd](https://www.fluentd.org) also use Joni/Oniguruma.
 This plugin aim compatibility with [fluentd regexp parser plugin](http://docs.fluentd.org/v0.12/articles/parser-plugin-overview) format.
@@ -21,6 +21,7 @@ This plugin aim compatibility with [fluentd regexp parser plugin](http://docs.fl
 * **default_timestamp_format**: Default timestamp format of the timestamp (string, default: `%Y-%m-%d %H:%M:%S.%N %z`)
 * **newline**: Newline character (CRLF, LF or CR) (string, default: CRLF)
 * **charset**: Character encoding (eg. ISO-8859-1, UTF-8) (string, default: UTF-8)
+* **format**: Regular expression string [Supported expression](https://github.com/kkos/oniguruma/blob/master/doc/RE) (string, required)
 
 ### columns
 

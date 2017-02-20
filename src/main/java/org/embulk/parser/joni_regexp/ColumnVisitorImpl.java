@@ -10,6 +10,7 @@ import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageBuilder;
 import org.embulk.spi.Schema;
 import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.json.JsonParser;
 import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.time.TimestampParser;
 import org.msgpack.core.MessageTypeException;
@@ -149,7 +150,9 @@ public class ColumnVisitorImpl implements ColumnVisitor
         }
         else {
             try {
-                pageBuilder.setJson(column, value);
+                JsonParser parser = new JsonParser();
+                Value json = parser.parse(value.toString());
+                pageBuilder.setJson(column, json);
             }
             catch (MessageTypeException e) {
                 throw new JsonRecordValidateException(String.format("failed to get \"%s\" as Json", value), e);

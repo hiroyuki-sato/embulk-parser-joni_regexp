@@ -25,7 +25,7 @@ import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.msgpack.value.MapValue;
+import org.msgpack.value.Value;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -231,7 +231,7 @@ public class TestJoniRegexpParserPlugin
         }
     }
 
-    @Test(expected=DataException.class)
+    @Test(expected = DataException.class)
     public void checkInvalidFormat()
             throws Exception
     {
@@ -263,7 +263,7 @@ public class TestJoniRegexpParserPlugin
         transaction(config, fileInput(
                 "true\tマイケル・ジャクソン\t2009-6-25  00:00:00\t456789\t123.456\t{\"name\":\"Michael Jackson\",\"birth\":\"1958-8-29\",\"age\":50,\"Bad World Tour\":4.4,\"album\":[\"Got To Be There\",\"Ben\",\"Music & Me\"]}"));
 
-        MapValue json = newMap(newString("name"), newString("Michael Jackson"),
+        Value json = newMap(newString("name"), newString("Michael Jackson"),
                 newString("birth"), newString("1958-8-29"),
                 newString("age"), newInteger(50),
                 newString("Bad World Tour"), newFloat(4.4),
@@ -279,7 +279,7 @@ public class TestJoniRegexpParserPlugin
             assertEquals(Timestamp.ofEpochSecond(1245888000L), record[2]);
             assertEquals(456789L, record[3]);
             assertEquals(123.456, record[4]);
-//            assertEquals(json, record[5]); // TODO
+            assertEquals(json, record[5]);
         }
     }
 

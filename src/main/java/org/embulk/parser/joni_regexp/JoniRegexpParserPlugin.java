@@ -29,6 +29,7 @@ import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 import org.slf4j.Logger;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Locale;
@@ -96,8 +97,8 @@ public class JoniRegexpParserPlugin
                 if (line == null) {
                     break;
                 }
-                Matcher matcher = regex.matcher(line.getBytes());
-                int result = matcher.search(0, line.getBytes().length, Option.DEFAULT);
+                Matcher matcher = regex.matcher(line.getBytes(StandardCharsets.UTF_8));
+                int result = matcher.search(0, line.getBytes(StandardCharsets.UTF_8).length, Option.DEFAULT);
 
                 if (result != -1) {
                     Region region = matcher.getEagerRegion();
@@ -142,7 +143,7 @@ public class JoniRegexpParserPlugin
     private Regex buildRegex(PluginTask task)
     {
         String format = task.getFormat();
-        byte[] pattern = format.getBytes();
+        byte[] pattern = format.getBytes(StandardCharsets.UTF_8);
         // throw org.joni.exception.SyntaxException if regex is invalid.
         return new Regex(pattern, 0, pattern.length, Option.NONE, UTF8Encoding.INSTANCE);
     }

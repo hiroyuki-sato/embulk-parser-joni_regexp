@@ -1,17 +1,33 @@
-# Joni parser plugin for Embulk
+# A Regular expression(Joni) parser plugin for Embulk
 
-TODO: Write short description here and build.gradle file.
+This is a regular expression parser plugin for Embulk. 
+It use [Joni](https://github.com/jruby/joni) regular expression library. 
+The Joni is Java port of [Oniguruma] regexp library. 
+
+The [Fluentd](https://www.fluentd.org) also use Joni/Oniguruma.
+This plugin aim compatibility with [fluentd regexp parser plugin](http://docs.fluentd.org/v0.12/articles/parser-plugin-overview) format.
 
 ## Overview
 
 * **Plugin type**: parser
-* **Guess supported**: no
+* **Guess supported**: yes (trivial)
 
 ## Configuration
 
-- **option1**: description (integer, required)
-- **option2**: description (string, default: `"myvalue"`)
-- **option3**: description (string, default: `null`)
+* **type**: Specify this parser as `joni_regexp`
+* **columns**: Specify column name and type. See below (array, required)
+* **stop_on_invalid_record**: Stop bulk load transaction if a file includes invalid record (such as invalid timestamp) (boolean, default: false)
+* **default_timezone**: Default timezone of the timestamp (string, default: UTC)
+* **default_timestamp_format**: Default timestamp format of the timestamp (string, default: `%Y-%m-%d %H:%M:%S.%N %z`)
+* **newline**: Newline character (CRLF, LF or CR) (string, default: CRLF)
+* **charset**: Character encoding (eg. ISO-8859-1, UTF-8) (string, default: UTF-8)
+
+### columns
+
+* **name**: Name of the column (string, required)
+* **type**: Type of the column (string, required)
+* **timezone**: Timezone of the timestamp if type is timestamp (string, default: default_timestamp)
+* **format**: Format of the timestamp if type is timestamp (string, default: default_format)
 
 ## Example
 
@@ -19,16 +35,23 @@ TODO: Write short description here and build.gradle file.
 in:
   type: any file input plugin type
   parser:
-    type: joni
-    option1: example1
-    option2: example2
+    type: joni_regexp
+    columns:
+      - { name: host, type: string }
+      - { name: user, type: string }
+      - { name: time, type: timestamp, format: "%d/%b/%Y:%H:%M:%S %z" }
+      - { name: method, type: string }
+      - { name: path, type: string }
+      - { name: code, type: string }
+      - { name: size, type: string }
+      - { name: referer, type: string }
+      - { name: agent, type: string }
+    format: '^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$'
 ```
-
-(If guess supported) you don't have to write `parser:` section in the configuration file. After writing `in:` section, you can let embulk guess `parser:` section using this command:
 
 ```
 $ embulk gem install embulk-parser-joni
-$ embulk guess -g joni config.yml -o guessed.yml
+$ embulk guess -g joni_regexp config.yml -o guessed.yml
 ```
 
 ## Build

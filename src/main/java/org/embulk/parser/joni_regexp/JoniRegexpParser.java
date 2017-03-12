@@ -8,6 +8,7 @@ import org.embulk.spi.util.FileInputInputStream;
 import org.embulk.spi.util.LineDecoder;
 import org.embulk.spi.util.Newline;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 
 import java.nio.ByteBuffer;
@@ -19,6 +20,9 @@ public class JoniRegexpParser
     private final Newline newline;
     private ByteBuffer buffer;
     private final FileInputInputStream inputStream;
+
+    private final byte CR = 13;
+    private final byte LF = 10;
 
     public static interface DecoderTask
             extends Task
@@ -37,6 +41,7 @@ public class JoniRegexpParser
 
         this.inputStream = new FileInputInputStream(in);
         this.buffer = ByteBuffer.allocate(INITIAL_BUFFER_SIZE);
+        this.newline = task.getNewline();
 
     }
 
@@ -50,5 +55,34 @@ public class JoniRegexpParser
 
     }
 
+    public byte[] poll()
+    {
+        try {
+//            return reader.readLine();
+
+        } catch (IOException ex) {
+            // unexpected
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private int newLinePos(){
+        buffer.mark();
+
+        while(true) {
+            byte a = buffer.get();
+            if (newline == Newline.CRLF && a == CR) {
+
+            }
+            else if ( newline == newline.CR && a == CR){
+            } else if( newline == newline.LF && a == LF ) {
+
+            } else {
+
+            }
+
+        }
+
+    }
 
 }

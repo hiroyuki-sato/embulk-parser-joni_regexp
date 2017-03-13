@@ -68,9 +68,14 @@ public class JoniRegexpParser
 
     private int newLinePos(){
         buffer.mark();
+        int pos = buffer.position();
+        int limit = buffer.limit();
+        char firstChar = newline.getFirstCharCode();
 
-        while(true) {
-            byte a = buffer.get();
+        for(; pos < limit ; pos++ ){
+            byte a = buffer.get(pos);
+
+            if( )
             if (newline == Newline.CRLF && a == CR) {
 
             }

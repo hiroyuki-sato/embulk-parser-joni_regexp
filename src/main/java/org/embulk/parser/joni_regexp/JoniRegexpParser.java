@@ -21,8 +21,10 @@ public class JoniRegexpParser
     private ByteBuffer buffer;
     private final FileInputInputStream inputStream;
 
-    private final byte CR = 13;
-    private final byte LF = 10;
+    private final byte[] CR = {13};
+    private final byte[] LF = {10};
+    private final byte[] CRLF = {13,10};
+
 
     public static interface DecoderTask
             extends Task
@@ -89,5 +91,25 @@ public class JoniRegexpParser
         }
 
     }
+
+    private byte[] newLineByte(Newline newlineChar)
+    {
+        byte[] newlineByte = new byte[0];
+        switch(newline) {
+            case CRLF:
+                break;
+            case LF:
+                newlineByte = LF
+                break;
+            case CR:
+                newlineByte = CR;
+                break;
+            default:
+                newlineByte = CRLF;
+        }
+        return newlineByte;
+
+    }
+
 
 }

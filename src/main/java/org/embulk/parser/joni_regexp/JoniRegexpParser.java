@@ -20,9 +20,13 @@ public class JoniRegexpParser
     private final Newline newline;
     private ByteBuffer buffer;
     private final FileInputInputStream inputStream;
+    private int newlineSearchPosition;
 
-    private final byte[] CR = {13};
-    private final byte[] LF = {10};
+    private final byte CR = 13;
+    private final byte LF = 10;
+
+//    private final byte[] CR = {13};
+//    private final byte[] LF = {10};
     private final byte[] CRLF = {13,10};
 
 
@@ -69,29 +73,34 @@ public class JoniRegexpParser
     }
 
     private int newLinePos(){
-        buffer.mark();
-        int pos = buffer.position();
+        int pos = newlineSearchPosition;
+        ;
         int limit = buffer.limit();
         char firstChar = newline.getFirstCharCode();
 
         for(; pos < limit ; pos++ ){
             byte a = buffer.get(pos);
 
-            if( )
             if (newline == Newline.CRLF && a == CR) {
-
+                if( pos+1 >= limit ){
+                    return -1;
+                }
+                pos++;
+                a = buffer.get(pos);
+                if( a == LF ) {
+                    return pos;
+                }
             }
-            else if ( newline == newline.CR && a == CR){
-            } else if( newline == newline.LF && a == LF ) {
-
-            } else {
-
+            else if ( (newline == newline.CR && a == CR) || (newline == newline.LF && a == LF) ){
+                newlineSearchPosition = pos + 1;
+                return pos;
             }
-
         }
-
+        newlineSearchPosition = pos;
+        return -1;
     }
 
+/*
     private byte[] newLineByte(Newline newlineChar)
     {
         byte[] newlineByte = new byte[0];
@@ -110,6 +119,6 @@ public class JoniRegexpParser
         return newlineByte;
 
     }
-
+*/
 
 }

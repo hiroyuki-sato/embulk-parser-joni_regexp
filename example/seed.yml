@@ -1,0 +1,8 @@
+in:
+  type: file
+  path_prefix: example/test2.txt
+  parser:
+    type: joni_regexp
+    format: "(?<name>[^,]+),(?<birth>\\d{4}-\\d{2}-\\d{2}),(?<age>\\d+)"
+out:
+  type: stdout

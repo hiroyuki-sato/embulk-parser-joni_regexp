@@ -81,8 +81,8 @@ Gem::Specification.new do |spec|
   spec.name          = "${project.name}"
   spec.version       = "${project.version}"
   spec.authors       = ["Hiroyuki Sato"]
-  spec.summary       = %[A Regular expression(Joni) parser plugin for Embulk]
-  spec.description   = %[A Regular expression parser plugin. Using Joni regular expression library. Fluentd regex parser also use Joni.]
+  spec.summary       = %[A Regular expression(Joni) parser plugin for Embulk(Fluentd compatible)]
+  spec.description   = %[The Embulk parser plugin for the Fluentd regex parser(Oniguruma) compatible.]
   spec.email         = ["hiroysato@gmail.com"]
   spec.licenses      = ["MIT"]
   spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-joni_regexp"

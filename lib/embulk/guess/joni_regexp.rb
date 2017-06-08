@@ -8,6 +8,8 @@ module Embulk
         parser_config = config["parser"]
         return {} unless parser_config
         format = parser_config["format"]
+        raise StandardError,"Guess need string `format` parameter" unless format.kind_of?(String)
+#        raise ConfigError,"Guess need string `format` parameter" unless format.kind_of?(String)
         guessed = {}
         begin
           regex = Regexp.new(format)

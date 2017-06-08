@@ -57,7 +57,7 @@ The `guess` command require `type` and `fomat` parameters.
 
 `seed.yml` example.
 
-```
+```yaml
 in:
   type: file
   path_prefix: example/test2.txt
@@ -76,7 +76,7 @@ $ embulk guess -g joni_regexp config.yml -o guessed.yml
 
 The `guess` command read `format` parameter and generate `columns`.
 
-```
+```yaml
 in:
   type: file
   path_prefix: example/test2.txt

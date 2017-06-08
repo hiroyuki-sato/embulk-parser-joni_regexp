@@ -50,9 +50,54 @@ in:
     format: '^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$'
 ```
 
+### Guess
+
+This plugin also support minimul `guess` command.
+The `guess` command require `type` and `fomat` parameters.
+
+`seed.yml` example.
+
+```
+in:
+  type: file
+  path_prefix: example/test2.txt
+  parser:
+    type: joni_regexp
+    format: "(?<name>[^,]+),(?<birth>\\d{4}-\\d{2}-\\d{2}),(?<age>\\d+)"
+out:
+  type: stdout
+```
+
+execute `guess` command.
+
+```
+$ embulk guess -g joni_regexp config.yml -o guessed.yml
+```
+
+The `guess` command read `format` parameter and generate `columns`.
+
+```
+in:
+  type: file
+  path_prefix: example/test2.txt
+  parser:
+    type: joni_regexp
+    format: (?<name>[^,]+),(?<birth>\d{4}-\d{2}-\d{2}),(?<age>\d+)
+    charset: UTF-8
+    newline: LF
+    columns:
+    - {name: name, type: string}
+    - {name: birth, type: string}
+    - {name: age, type: string}
+out: {type: stdout}
+```
+
+
+
+## Install
+
 ```
 $ embulk gem install embulk-parser-joni
-$ embulk guess -g joni_regexp config.yml -o guessed.yml
 ```
 
 ## Build

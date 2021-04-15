@@ -1,41 +1,35 @@
 plugins {
     id "com.jfrog.bintray" version "1.1"
-    id "com.github.jruby-gradle.base" version "0.1.5"
     id "java"
     id "checkstyle"
-    id "findbugs"
+    id "maven-publish"
+    id "org.embulk.embulk-plugins" version "0.4.2"
 }
-import com.github.jrubygradle.JRubyExec
 repositories {
     mavenCentral()
     jcenter()
 }
-configurations {
-    provided
-}
 
-version = "0.1.0"
+group = "com.github.hiroyuki-sato"
+version = "0.2.0-SNAPSHOT"
+description = "The Embulk parser plugin for the Fluentd regex parser(Oniguruma) compatible."
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.8.16"
-    provided "org.embulk:embulk-core:0.8.16"
+    compileOnly "org.embulk:embulk-api:0.10.30"
+    compileOnly "org.embulk:embulk-spi:0.10.30"
     
-    compile  "org.jruby.joni:joni:2.1.11"
-    compile  "org.jruby.jcodings:jcodings:1.0.18"
-    testCompile "junit:junit:4.+"
-    testCompile  "org.embulk:embulk-core:0.8.16:tests"
-    testCompile  "org.embulk:embulk-standards:0.8.16"
-}
+    compile  "org.jruby.joni:joni:2.1.41"
+    compile  "org.jruby.jcodings:jcodings:1.0.55"
 
-task classpath(type: Copy, dependsOn: ["jar"]) {
-    doFirst { file("classpath").deleteDir() }
-    from (configurations.runtime - configurations.provided + files(jar.archivePath))
-    into "classpath"
+    testCompile "junit:junit:4.+"
+    testCompile "org.embulk:embulk-api:0.10.30"
+    testCompile "org.embulk:embulk-spi:0.10.30"
+    testCompile "org.embulk:embulk-core:0.10.30"
+    testCompile "org.embulk:embulk-deps:0.10.30"
 }
-clean { delete "classpath" }
 
 checkstyle {
     configFile = file("${project.rootDir}/config/checkstyle/checkstyle.xml")
@@ -54,48 +48,50 @@ task checkstyle(type: Checkstyle) {
     source = sourceSets.main.allJava + sourceSets.test.allJava
 }
 
-task gem(type: JRubyExec, dependsOn: ["gemspec", "classpath"]) {
-    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "build"
-    script "${project.name}.gemspec"
-    doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "pkg") }
+embulkPlugin {
+    mainClass = "org.embulk.parser.joni_regexp.JoniRegexpParserPlugin"
+    category = "parser"
+    type = "joni_regexp"
 }
 
-task gemPush(type: JRubyExec, dependsOn: ["gem"]) {
-    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "push"
-    script "pkg/${project.name}-${project.version}.gem"
-}
-
-task "package"(dependsOn: ["gemspec", "classpath"]) {
-    doLast {
-        println "> Build succeeded."
-        println "> You can run embulk with '-L ${file(".").absolutePath}' argument."
+publishing {
+    publications {
+        embulkPluginMaven(MavenPublication) {  // Publish it with "publishEmbulkPluginMavenPublicationToMavenRepository".
+            from components.java  // Must be "components.java". The dependency modification works only for it.
+        }
+    }
+    repositories {
+        maven {
+            url = "${project.buildDir}/mavenPublishLocal"
+        }
     }
 }
 
-task gemspec {
-    ext.gemspecFile = file("${project.name}.gemspec")
-    inputs.file "build.gradle"
-    outputs.file gemspecFile
-    doLast { gemspecFile.write($/
-Gem::Specification.new do |spec|
-  spec.name          = "${project.name}"
-  spec.version       = "${project.version}"
-  spec.authors       = ["Hiroyuki Sato"]
-  spec.summary       = %[A Regular expression(Joni) parser plugin for Embulk(Fluentd compatible)]
-  spec.description   = %[The Embulk parser plugin for the Fluentd regex parser(Oniguruma) compatible.]
-  spec.email         = ["hiroysato@gmail.com"]
-  spec.licenses      = ["MIT"]
-  spec.homepage      = "https://github.com/hiroyuki-sato/embulk-parser-joni_regexp"
+gem {
+    from("LICENSE.txt")  // Optional -- if you need other files in the gem.
+    authors = [ "Hiroyuki Sato" ]
+    email = [ "hiroysato@gmail.com" ]
+    // "description" of the gem is copied from "description" of your Gradle project.
+    summary = "A Regular expression(Joni) parser plugin for Embulk(Fluentd compatible)"
+    homepage = "https://github.com/hiroyuki-sato/embulk-parser-joni_regexp"
+    licenses = [ "MIT" ]
+//    metadata = [  // Optional -- if you need metadata in the gem.
+//        "foo": "bar"
+//    ]
 
-  spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
-  spec.test_files    = spec.files.grep(%r"^(test|spec)/")
-  spec.require_paths = ["lib"]
-
-  #spec.add_dependency 'YOUR_GEM_DEPENDENCY', ['~> YOUR_GEM_DEPENDENCY_VERSION']
-  spec.add_development_dependency 'bundler', ['~> 1.0']
-  spec.add_development_dependency 'rake', ['>= 10.0']
-end
-/$)
+    generateRubyCode = false  // Avoiding generate lib/embulk/parser/joni_regexp.rb
+    into("lib/embulk/parser/") {
+      from "lib/embulk/parser/joni_regexp.rb"
+    }
+    into("lib/embulk/guess/") {
+      from "lib/embulk/guess/joni_regexp.rb"
     }
 }
-clean { delete "${project.name}.gemspec" }
+
+gemPush {
+    host = "https://rubygems.org"
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation" << "-Xlint:unchecked"
+}

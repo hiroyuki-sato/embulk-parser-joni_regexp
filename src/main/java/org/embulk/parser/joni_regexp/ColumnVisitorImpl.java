@@ -1,18 +1,17 @@
 package org.embulk.parser.joni_regexp;
 
-import com.google.common.base.Optional;
+import java.time.Instant;
 import org.embulk.parser.joni_regexp.JoniRegexpParserPlugin.PluginTask;
 import org.embulk.parser.joni_regexp.JoniRegexpParserPlugin.TypecastColumnOption;
 
 import org.embulk.spi.Column;
-import org.embulk.spi.ColumnConfig;
+import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageBuilder;
 import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
-import org.embulk.spi.json.JsonParser;
-import org.embulk.spi.time.Timestamp;
-import org.embulk.spi.time.TimestampParser;
+import org.embulk.util.config.units.SchemaConfig;
+import org.embulk.util.json.JsonParser;
+import org.embulk.util.timestamp.TimestampFormatter;
 import org.msgpack.core.MessageTypeException;
 import org.msgpack.value.Value;
 
@@ -21,12 +20,12 @@ public class ColumnVisitorImpl implements ColumnVisitor
     protected final PluginTask task;
     protected final Schema schema;
     protected final PageBuilder pageBuilder;
-    protected final TimestampParser[] timestampParsers;
+    protected final TimestampFormatter[] timestampParsers;
     protected final Boolean[] autoTypecasts;
 
     protected Value value;
 
-    public ColumnVisitorImpl(PluginTask task, Schema schema, PageBuilder pageBuilder, TimestampParser[] timestampParsers)
+    public ColumnVisitorImpl(PluginTask task, Schema schema, PageBuilder pageBuilder, TimestampFormatter[] timestampParsers)
     {
         this.task = task;
         this.schema = schema;
@@ -46,7 +45,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
 
         for (ColumnConfig columnConfig : schemaConfig.getColumns()) {
             TypecastColumnOption columnOption = columnConfig.getOption().loadConfig(TypecastColumnOption.class);
-            Boolean autoTypecast = columnOption.getTypecast().or(task.getDefaultTypecast());
+            Boolean autoTypecast = columnOption.getTypecast().orElse(task.getDefaultTypecast());
             Column column = schema.lookupColumn(columnConfig.getName());
             this.autoTypecasts[column.getIndex()] = autoTypecast;
         }
@@ -133,7 +132,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
         }
         else {
             try {
-                Timestamp timestamp = ColumnCaster.asTimestamp(value, timestampParsers[column.getIndex()]);
+                Instant timestamp = ColumnCaster.asTimestamp(value, timestampParsers[column.getIndex()]);
                 pageBuilder.setTimestamp(column, timestamp);
             }
             catch (MessageTypeException e) {

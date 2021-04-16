@@ -1,11 +1,15 @@
 package org.embulk.parser.joni_regexp;
 
-import com.google.common.base.Optional;
-import org.embulk.config.Config;
-import org.embulk.config.ConfigDefault;
+import java.util.Optional;
+
+import org.embulk.spi.type.TimestampType;
+import org.embulk.util.config.Config;
+import org.embulk.util.config.ConfigDefault;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.Task;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.Task;
 import org.embulk.config.TaskSource;
 import org.embulk.spi.Column;
 import org.embulk.spi.DataException;
@@ -15,10 +19,14 @@ import org.embulk.spi.PageBuilder;
 import org.embulk.spi.PageOutput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
-import org.embulk.spi.time.TimestampParser;
-import org.embulk.spi.util.LineDecoder;
-import org.embulk.spi.util.Timestamps;
+import org.embulk.util.config.TaskMapper;
+import org.embulk.util.config.modules.TypeModule;
+import org.embulk.util.config.units.ColumnConfig;
+import org.embulk.util.config.units.SchemaConfig;
+import org.embulk.util.text.LineDecoder;
+import org.embulk.util.text.LineDelimiter;
+import org.embulk.util.text.Newline;
+import org.embulk.util.timestamp.TimestampFormatter;
 import org.jcodings.specific.UTF8Encoding;
 import org.joni.Matcher;
 import org.joni.NameEntry;
@@ -28,6 +36,7 @@ import org.joni.Region;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +46,13 @@ import java.util.Locale;
 public class JoniRegexpParserPlugin
         implements ParserPlugin
 {
-    private static final Logger logger = Exec.getLogger(JoniRegexpParserPlugin.class);
+    private static final Logger logger = LoggerFactory.getLogger(JoniRegexpParserPlugin.class);
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory
+            .builder()
+            .addDefaultModules()
+            .addModule(new TypeModule())
+            .build();
+    private static final ConfigMapper CONFIG_MAPPER = CONFIG_MAPPER_FACTORY.createConfigMapper();
 
     public interface TypecastColumnOption
             extends Task
@@ -48,7 +63,7 @@ public class JoniRegexpParserPlugin
     }
 
     public interface PluginTask
-            extends Task, LineDecoder.DecoderTask, TimestampParser.Task
+            extends Task
     {
         @Config("columns")
         SchemaConfig getColumns();
@@ -63,12 +78,57 @@ public class JoniRegexpParserPlugin
         @Config("default_typecast")
         @ConfigDefault("true")
         Boolean getDefaultTypecast();
+
+        // From org.embulk.spi.util.LineDecoder.DecoderTask.
+        @Config("charset")
+        @ConfigDefault("\"utf-8\"")
+        Charset getCharset();
+
+        // From org.embulk.spi.util.LineDecoder.DecoderTask.
+        @Config("newline")
+        @ConfigDefault("\"CRLF\"")
+        Newline getNewline();
+
+        // From org.embulk.spi.util.LineDecoder.DecoderTask.
+        @Config("line_delimiter_recognized")
+        @ConfigDefault("null")
+        Optional<LineDelimiter> getLineDelimiterRecognized();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_timezone")
+        @ConfigDefault("\"UTC\"")
+        String getDefaultTimeZoneId();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_timestamp_format")
+        @ConfigDefault("\"%Y-%m-%d %H:%M:%S.%N %z\"")
+        String getDefaultTimestampFormat();
+
+        // From org.embulk.spi.time.TimestampParser.Task.
+        @Config("default_date")
+        @ConfigDefault("\"1970-01-01\"")
+        String getDefaultDate();
     }
 
+    public interface JoniRegexpColumnOption
+            extends Task
+    {
+        @Config("timezone")
+        @ConfigDefault("null")
+        Optional<String> getTimeZoneId();
+
+        @Config("format")
+        @ConfigDefault("null")
+        Optional<String> getFormat();
+
+        @Config("date")
+        @ConfigDefault("null")
+        Optional<String> getDate();
+    }
     @Override
     public void transaction(ConfigSource config, ParserPlugin.Control control)
     {
-        PluginTask task = config.loadConfig(PluginTask.class);
+        final PluginTask task = CONFIG_MAPPER.map(config, PluginTask.class);
 
         Schema schema = task.getColumns().toSchema();
 
@@ -81,10 +141,11 @@ public class JoniRegexpParserPlugin
     public void run(TaskSource taskSource, Schema schema,
             FileInput input, PageOutput output)
     {
-        PluginTask task = taskSource.loadTask(PluginTask.class);
-        LineDecoder lineDecoder = new LineDecoder(input, task);
+        final TaskMapper taskMapper = CONFIG_MAPPER_FACTORY.createTaskMapper();
+        final PluginTask task = taskMapper.map(taskSource, PluginTask.class);
+        final LineDecoder lineDecoder = LineDecoder.of(input, task.getCharset(), task.getLineDelimiterRecognized().orElse(null));
         PageBuilder pageBuilder = new PageBuilder(Exec.getBufferAllocator(), schema, output);
-        TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getColumns());
+        TimestampFormatter[] timestampParsers = newTimestampColumnFormatters(task, task.getColumns());
 
         ColumnVisitorImpl visitor = new ColumnVisitorImpl(task, schema, pageBuilder, timestampParsers);
 
@@ -165,5 +226,26 @@ public class JoniRegexpParserPlugin
             String captureName = captureName(e);
             schema.lookupColumn(captureName); // throw SchemaConfigException;
         }
+    }
+    @SuppressWarnings("deprecation")  // https://github.com/embulk/embulk/issues/1289
+    private static TimestampFormatter[] newTimestampColumnFormatters(
+            final PluginTask task,
+            final SchemaConfig schema) {
+        final TimestampFormatter[] formatters = new TimestampFormatter[schema.getColumnCount()];
+        int i = 0;
+        for (final ColumnConfig column : schema.getColumns()) {
+            if (column.getType() instanceof TimestampType) {
+                final JoniRegexpColumnOption columnOption =
+                        CONFIG_MAPPER.map(column.getOption(), JoniRegexpColumnOption.class);
+
+                final String pattern = columnOption.getFormat().orElse(task.getDefaultTimestampFormat());
+                formatters[i] = TimestampFormatter.builder(pattern, true)
+                        .setDefaultZoneFromString(columnOption.getTimeZoneId().orElse(task.getDefaultTimeZoneId()))
+                        .setDefaultDateFromString(columnOption.getDate().orElse(task.getDefaultDate()))
+                        .build();
+            }
+            i++;
+        }
+        return formatters;
     }
 }

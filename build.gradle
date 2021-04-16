@@ -51,6 +51,8 @@ dependencies {
     testCompile "org.embulk:embulk-spi:0.10.30"
     testCompile "org.embulk:embulk-core:0.10.30"
     testCompile "org.embulk:embulk-deps:0.10.30"
+    testCompile "org.embulk:embulk-core:0.10.30"
+    testCompile  "org.embulk:embulk-core:0.10.30:tests"
 }
 
 checkstyle {

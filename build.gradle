@@ -36,6 +36,7 @@ dependencies {
     compile('org.embulk:embulk-util-json:0.1.0') {
         exclude group: "org.msgpack", module: "msgpack-core"
     }
+    compile "org.embulk:embulk-util-text:0.1.0"
 
     testCompile "junit:junit:4.+"
     testCompile "org.embulk:embulk-api:0.10.30"

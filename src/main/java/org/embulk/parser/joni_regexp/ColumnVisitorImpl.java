@@ -5,6 +5,9 @@ import org.embulk.parser.joni_regexp.JoniRegexpParserPlugin.PluginTask;
 import org.embulk.parser.joni_regexp.JoniRegexpParserPlugin.TypecastColumnOption;
 
 import org.embulk.spi.Column;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.modules.TypeModule;
 import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.ColumnVisitor;
 import org.embulk.spi.PageBuilder;
@@ -24,6 +27,12 @@ public class ColumnVisitorImpl implements ColumnVisitor
     protected final Boolean[] autoTypecasts;
 
     protected Value value;
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory
+            .builder()
+            .addDefaultModules()
+            .addModule(new TypeModule())
+            .build();
+    private static final ConfigMapper CONFIG_MAPPER = CONFIG_MAPPER_FACTORY.createConfigMapper();
 
     public ColumnVisitorImpl(PluginTask task, Schema schema, PageBuilder pageBuilder, TimestampFormatter[] timestampParsers)
     {
@@ -44,7 +53,7 @@ public class ColumnVisitorImpl implements ColumnVisitor
         SchemaConfig schemaConfig = task.getColumns();
 
         for (ColumnConfig columnConfig : schemaConfig.getColumns()) {
-            TypecastColumnOption columnOption = columnConfig.getOption().loadConfig(TypecastColumnOption.class);
+            TypecastColumnOption columnOption = CONFIG_MAPPER.map(columnConfig.getOption(), TypecastColumnOption.class);
             Boolean autoTypecast = columnOption.getTypecast().orElse(task.getDefaultTypecast());
             Column column = schema.lookupColumn(columnConfig.getName());
             this.autoTypecasts[column.getIndex()] = autoTypecast;

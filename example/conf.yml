@@ -4,7 +4,7 @@ in:
   parser:
     type: joni_regexp
     columns:
-      - { name: name2, type: string }
+      - { name: name, type: string }
       - { name: fuga, type: string }
 #    format: "(?<hoge>aaa*),(?<fuga>bbb*),(?<test>ccc)"
     format: '(?<name>a*) (?<fuga>bbbb*)'

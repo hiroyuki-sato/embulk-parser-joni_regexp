@@ -3,15 +3,15 @@ package org.embulk.parser.joni_regexp;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
-import org.embulk.spi.time.TimestampParser;
-import org.joda.time.DateTimeZone;
-import org.jruby.embed.ScriptingContainer;
+import org.embulk.util.timestamp.TimestampFormatter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.msgpack.value.MapValue;
 import org.msgpack.value.Value;
 import org.msgpack.value.ValueFactory;
+
+import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -23,19 +23,20 @@ public class TestColumnCaster
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
     public MapValue mapValue;
     public DataException thrown;
-    public ScriptingContainer jruby;
-    public TimestampParser parser;
+    public TimestampFormatter parser;
 
     @Before
     public void createResource()
     {
-        jruby = new ScriptingContainer();
         thrown = new DataException("any");
         Value[] kvs = new Value[2];
         kvs[0] = ValueFactory.newString("k");
         kvs[1] = ValueFactory.newString("v");
         mapValue = ValueFactory.newMap(kvs);
-        parser = new TimestampParser(jruby, "%Y-%m-%d %H:%M:%S.%N", DateTimeZone.UTC);
+        parser = TimestampFormatter.builder("%Y-%m-%d %H:%M:%S.%N", true)
+                .setDefaultZoneFromString("UTC")
+                .setDefaultDateFromString("1970-01-01")
+                .build();
     }
 
     @Test
@@ -231,14 +232,14 @@ public class TestColumnCaster
     @Test
     public void asTimestampFromFloat()
     {
-        Timestamp expected = Timestamp.ofEpochSecond(1463084053, 500000000);
+        Instant expected = Instant.ofEpochSecond(1463084053, 500000000);
         assertEquals(expected, ColumnCaster.asTimestamp(ValueFactory.newFloat(1463084053.5), parser));
     }
 
     @Test
     public void asTimestampFromString()
     {
-        Timestamp expected = Timestamp.ofEpochSecond(1463084053, 500000000);
+        Instant expected = Instant.ofEpochSecond(1463084053, 500000000);
         assertEquals(expected, ColumnCaster.asTimestamp(ValueFactory.newString("2016-05-12 20:14:13.5"), parser));
     }
 

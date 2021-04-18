@@ -3,12 +3,12 @@ package org.embulk.parser.joni_regexp.cast;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.spi.DataException;
 import org.embulk.spi.time.Timestamp;
-import org.embulk.spi.time.TimestampParser;
-import org.joda.time.DateTimeZone;
-import org.jruby.embed.ScriptingContainer;
+import org.embulk.util.timestamp.TimestampFormatter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -18,12 +18,10 @@ public class TestStringCast
 {
     @Rule
     public EmbulkTestRuntime runtime = new EmbulkTestRuntime();
-    public ScriptingContainer jruby;
 
     @Before
     public void createResource()
     {
-        jruby = new ScriptingContainer();
     }
 
     @Test
@@ -88,8 +86,12 @@ public class TestStringCast
     @Test
     public void asTimestamp()
     {
-        Timestamp expected = Timestamp.ofEpochSecond(1463084053, 123456000);
-        TimestampParser parser = new TimestampParser(jruby, "%Y-%m-%d %H:%M:%S.%N", DateTimeZone.UTC);
+        Instant expected = Instant.ofEpochSecond(1463084053, 123456000);
+        TimestampFormatter parser = TimestampFormatter.builder("%Y-%m-%d %H:%M:%S.%N", true)
+                .setDefaultZoneFromString("UTC")
+                .setDefaultDateFromString("1970-01-01")
+                .build();
+
         assertEquals(expected, StringCast.asTimestamp("2016-05-12 20:14:13.123456", parser));
 
         try {

@@ -7,21 +7,24 @@ import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskSource;
-import org.embulk.spi.ColumnConfig;
+import org.embulk.spi.time.Timestamp;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.TaskMapper;
+import org.embulk.util.config.modules.TypeModule;
+import org.embulk.util.config.units.ColumnConfig;
 import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
 import org.embulk.spi.ParserPlugin;
 import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
+import org.embulk.util.config.units.SchemaConfig;
 import org.embulk.spi.SchemaConfigException;
 import org.embulk.spi.TestPageBuilderReader;
-import org.embulk.spi.time.Timestamp;
 import org.embulk.spi.type.Type;
-import org.embulk.spi.util.InputStreamFileInput;
-import org.embulk.spi.util.Newline;
+import org.embulk.util.file.InputStreamFileInput;
 import org.embulk.spi.util.Pages;
-import org.joda.time.DateTimeZone;
+import org.embulk.util.text.Newline;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
@@ -53,6 +57,14 @@ public class TestJoniRegexpParserPlugin
     private ConfigSource config;
     private JoniRegexpParserPlugin plugin;
     private TestPageBuilderReader.MockPageOutput output;
+
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory
+            .builder()
+            .addDefaultModules()
+            .addModule(new TypeModule())
+            .build();
+    private static final ConfigMapper CONFIG_MAPPER = CONFIG_MAPPER_FACTORY.createConfigMapper();
+    private static final TaskMapper TASK_MAPPER = CONFIG_MAPPER_FACTORY.createTaskMapper();
 
     // TODO
 //     private static final String RESOURCE_NAME_PREFIX = "org/embulk/parser/joni/";
@@ -101,9 +113,10 @@ public class TestJoniRegexpParserPlugin
         Object[] record;
         {
             record = records.get(0);
+            Timestamp time = (Timestamp) record[2];
             assertEquals("224.126.227.109", record[0]);
             assertEquals("-", record[1]);
-            assertEquals(Timestamp.ofEpochSecond(1486983892L), record[2]);
+            assertEquals(Instant.ofEpochSecond(1486983892L), time.getInstant());
             assertEquals("GET", record[3]);
             assertEquals("/category/games", record[4]);
 //            assertEquals("HTTP/1.1", record[5]);
@@ -114,9 +127,10 @@ public class TestJoniRegexpParserPlugin
         }
         {
             record = records.get(1);
+            Timestamp time = (Timestamp) record[2];
             assertEquals("128.27.132.24", record[0]);
             assertEquals("bob", record[1]);
-            assertEquals(Timestamp.ofEpochSecond(1486983893L), record[2]);
+            assertEquals(Instant.ofEpochSecond(1486983893L), time.getInstant());
             assertEquals("GET", record[3]);
             assertEquals("/category/health", record[4]);
 //            assertEquals("HTTP/1.1", record[5]);
@@ -159,9 +173,10 @@ public class TestJoniRegexpParserPlugin
         Object[] record;
         {
             record = records.get(0);
+            Timestamp time = (Timestamp) record[2];
             assertEquals("224.126.227.109", record[0]);
             assertEquals("-", record[1]);
-            assertEquals(Timestamp.ofEpochSecond(1486983892L), record[2]);
+            assertEquals(Instant.ofEpochSecond(1486983892L), time.getInstant());
             assertEquals("GET", record[3]);
             assertEquals("/category/games", record[4]);
 //            assertEquals("HTTP/1.1", record[5]);
@@ -172,9 +187,10 @@ public class TestJoniRegexpParserPlugin
         }
         {
             record = records.get(1);
+            Timestamp time = (Timestamp) record[2];
             assertEquals("128.27.132.24", record[0]);
             assertEquals("bob", record[1]);
-            assertEquals(Timestamp.ofEpochSecond(1486983893L), record[2]);
+            assertEquals(Instant.ofEpochSecond(1486983893L), time.getInstant());
             assertEquals("GET", record[3]);
             assertEquals("/category/health", record[4]);
             assertEquals("200", record[5]);
@@ -210,7 +226,6 @@ public class TestJoniRegexpParserPlugin
     public void checkLookahead()
             throws Exception
     {
-
         SchemaConfig schema = schema(
                 column("string1", STRING), column("string2", STRING));
 
@@ -274,9 +289,10 @@ public class TestJoniRegexpParserPlugin
         Object[] record;
         {
             record = records.get(0);
+            Timestamp time = (Timestamp) record[2];
             assertEquals(true, record[0]);
             assertEquals("マイケル・ジャクソン", record[1]);
-            assertEquals(Timestamp.ofEpochSecond(1245888000L), record[2]);
+            assertEquals(Instant.ofEpochSecond(1245888000L), time.getInstant());
             assertEquals(456789L, record[3]);
             assertEquals(123.456, record[4]);
             assertEquals(json, record[5]);
@@ -286,18 +302,19 @@ public class TestJoniRegexpParserPlugin
     @Test
     public void checkDefaultValues()
     {
-        ConfigSource config = Exec.newConfigSource()
+        ConfigSource config = config()
                 .set("columns", ImmutableList.of(
                         ImmutableMap.of(
                                 "name", "name",
                                 "type", "string")))
                 .set("format", "(?<name>a*)");
 
-        JoniRegexpParserPlugin.PluginTask task = config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        JoniRegexpParserPlugin.PluginTask task = CONFIG_MAPPER.map(config, JoniRegexpParserPlugin.PluginTask.class);
+        ;
 
         assertEquals(Charset.forName("utf-8"), task.getCharset());
         assertEquals(Newline.CRLF, task.getNewline());
-        assertEquals(DateTimeZone.UTC, task.getDefaultTimeZone());
+        assertEquals("UTC", task.getDefaultTimeZoneId());
         assertEquals("%Y-%m-%d %H:%M:%S.%N %z", task.getDefaultTimestampFormat());
         assertEquals(false, task.getStopOnInvalidRecord());
         //assertEquals( true, task.getDefaultTypecast());
@@ -307,35 +324,38 @@ public class TestJoniRegexpParserPlugin
     @Test(expected = ConfigException.class)
     public void checkColumnsRequired()
     {
-        ConfigSource config = Exec.newConfigSource()
+        ConfigSource config = config()
                 .set("format", "(?<name>a*)");
 
-        config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        //config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        CONFIG_MAPPER.map(config, JoniRegexpParserPlugin.PluginTask.class);
     }
 
     @Test(expected = ConfigException.class)
     public void checkFormatRequired()
     {
-        ConfigSource config = Exec.newConfigSource()
+        ConfigSource config = config()
                 .set("columns", ImmutableList.of(
                         ImmutableMap.of(
                                 "name", "name",
                                 "type", "string")));
 
-        config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        //config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        CONFIG_MAPPER.map(config, JoniRegexpParserPlugin.PluginTask.class);
     }
 
     @Test // (expected = SchemaConfigException.class)
     public void checkNamedCaptureColumnNotFound()
     {
-        ConfigSource config2 = Exec.newConfigSource()
+        ConfigSource config2 = config()
                 .set("columns", ImmutableList.of(
                         ImmutableMap.of(
                                 "name", "hoge",
                                 "type", "string")))
                 .set("format", "(?<no_capture_name>a*)");
 
-        config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        //config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        CONFIG_MAPPER.map(config2, JoniRegexpParserPlugin.PluginTask.class);
         try {
             transaction(config2, fileInput(""));
         }
@@ -348,29 +368,31 @@ public class TestJoniRegexpParserPlugin
     public void checkNoNamedCapturingGroupRegex()
             throws Exception
     {
-        ConfigSource config2 = Exec.newConfigSource()
+        ConfigSource config2 = config()
                 .set("columns", ImmutableList.of(
                         ImmutableMap.of(
                                 "name", "hoge",
                                 "type", "string")))
                 .set("format", "no named capturing group regex");
 
-        config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        CONFIG_MAPPER.map(config2, JoniRegexpParserPlugin.PluginTask.class);
+        //config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
         transaction(config2, fileInput(""));
     }
-
-    @Test(expected = org.joni.exception.SyntaxException.class)
+    //@Test(expected = org.embulk.config.ConfigException.class)
+    @Test(expected = org.joni.exception.ValueException.class)
     public void checkInvalidRegexSyntax()
             throws Exception
     {
-        ConfigSource config2 = Exec.newConfigSource()
+        ConfigSource config2 = config()
                 .set("columns", ImmutableList.of(
                         ImmutableMap.of(
                                 "name", "hoge",
                                 "type", "string")))
                 .set("format", "(?<invalid_regex");
 
-        config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
+        CONFIG_MAPPER.map(config2, JoniRegexpParserPlugin.PluginTask.class);
+        //config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
         transaction(config2, fileInput(""));
     }
 
@@ -429,4 +451,5 @@ public class TestJoniRegexpParserPlugin
     {
         return new ColumnConfig(name, type, option);
     }
+
 }

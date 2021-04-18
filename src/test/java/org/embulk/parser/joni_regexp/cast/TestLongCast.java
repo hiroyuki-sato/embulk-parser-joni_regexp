@@ -1,7 +1,8 @@
 package org.embulk.parser.joni_regexp.cast;
 
-import org.embulk.spi.time.Timestamp;
 import org.junit.Test;
+
+import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,7 +36,7 @@ public class TestLongCast
     @Test
     public void asTimestamp()
     {
-        Timestamp expected = Timestamp.ofEpochSecond(1);
+        Instant expected = Instant.ofEpochSecond(1);
         assertEquals(expected, LongCast.asTimestamp(1));
     }
 }

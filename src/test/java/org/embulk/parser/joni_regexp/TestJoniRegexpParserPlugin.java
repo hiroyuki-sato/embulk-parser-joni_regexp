@@ -1,7 +1,6 @@
 package org.embulk.parser.joni_regexp;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.embulk.EmbulkTestRuntime;
 import org.embulk.config.ConfigException;
@@ -36,7 +35,11 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.embulk.spi.type.Types.BOOLEAN;
@@ -303,10 +306,12 @@ public class TestJoniRegexpParserPlugin
     public void checkDefaultValues()
     {
         ConfigSource config = config()
-                .set("columns", ImmutableList.of(
-                        ImmutableMap.of(
-                                "name", "name",
-                                "type", "string")))
+                .set("columns", Collections.unmodifiableList(Arrays.asList(
+                        Collections.unmodifiableMap(new HashMap<String,String>(){
+                            {
+                                put("name","hoge");
+                                put("type","string");
+                            }}))))
                 .set("format", "(?<name>a*)");
 
         JoniRegexpParserPlugin.PluginTask task = CONFIG_MAPPER.map(config, JoniRegexpParserPlugin.PluginTask.class);
@@ -335,10 +340,12 @@ public class TestJoniRegexpParserPlugin
     public void checkFormatRequired()
     {
         ConfigSource config = config()
-                .set("columns", ImmutableList.of(
-                        ImmutableMap.of(
-                                "name", "name",
-                                "type", "string")));
+                .set("columns", Collections.unmodifiableList(Arrays.asList(
+                        Collections.unmodifiableMap(new HashMap<String,String>(){
+                            {
+                                put("name","hoge");
+                                put("type","string");
+                            }}))));
 
         //config.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
         CONFIG_MAPPER.map(config, JoniRegexpParserPlugin.PluginTask.class);
@@ -348,10 +355,12 @@ public class TestJoniRegexpParserPlugin
     public void checkNamedCaptureColumnNotFound()
     {
         ConfigSource config2 = config()
-                .set("columns", ImmutableList.of(
-                        ImmutableMap.of(
-                                "name", "hoge",
-                                "type", "string")))
+                .set("columns", Collections.unmodifiableList(Arrays.asList(
+                        Collections.unmodifiableMap(new HashMap<String,String>(){
+                            {
+                                put("name","hoge");
+                                put("type","string");
+                            }}))))
                 .set("format", "(?<no_capture_name>a*)");
 
         //config2.loadConfig(JoniRegexpParserPlugin.PluginTask.class);
@@ -369,10 +378,12 @@ public class TestJoniRegexpParserPlugin
             throws Exception
     {
         ConfigSource config2 = config()
-                .set("columns", ImmutableList.of(
-                        ImmutableMap.of(
-                                "name", "hoge",
-                                "type", "string")))
+                .set("columns", Collections.unmodifiableList(Arrays.asList(
+                        Collections.unmodifiableMap(new HashMap<String,String>(){
+                            {
+                                put("name","hoge");
+                                put("type","string");
+                            }}))))
                 .set("format", "no named capturing group regex");
 
         CONFIG_MAPPER.map(config2, JoniRegexpParserPlugin.PluginTask.class);
@@ -384,11 +395,21 @@ public class TestJoniRegexpParserPlugin
     public void checkInvalidRegexSyntax()
             throws Exception
     {
+
+        Map<String,String> opt = Collections.unmodifiableMap(new HashMap<String,String>(){
+        {
+            put("name","hoge");
+            put("type","string");
+        }});
+
+
         ConfigSource config2 = config()
-                .set("columns", ImmutableList.of(
-                        ImmutableMap.of(
-                                "name", "hoge",
-                                "type", "string")))
+                .set("columns", Collections.unmodifiableList(Arrays.asList(
+                        Collections.unmodifiableMap(new HashMap<String,String>(){
+                            {
+                                put("name","hoge");
+                                put("type","string");
+                            }}))))
                 .set("format", "(?<invalid_regex");
 
         CONFIG_MAPPER.map(config2, JoniRegexpParserPlugin.PluginTask.class);
